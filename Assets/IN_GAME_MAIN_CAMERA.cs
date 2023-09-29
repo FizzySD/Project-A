@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
 {
@@ -22,6 +21,8 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
 
     private void Awake()
     {
+        Cursor.lockState = CursorLockMode.Locked; // Blocca il cursore all'interno della finestra di gioco.
+        Cursor.visible = false;
         Cache();
         instance = this;
         base.name = "MainCamera";
@@ -47,7 +48,6 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
 
         float angle3 = Input.GetAxis("Mouse X") * 10f * num * Time.deltaTime;
         float num4 = (0f - Input.GetAxis("Mouse Y")) * 10f * num * (float)1 * Time.deltaTime;
-
         _transform.RotateAround(_transform.position, Vector3.up, angle3);
         float num5 = _transform.rotation.eulerAngles.x % 360f;
         float num6 = num5 + num4;

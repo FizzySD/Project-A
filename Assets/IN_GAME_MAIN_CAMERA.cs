@@ -3,12 +3,12 @@ using UnityEngine;
 
 internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
 {
-    public float cameraDistance = 0.6f;
+    private float cameraDistance = 1.3f;
     private float distance = 10f;
     private Transform _transform;
     public GameObject main_object;
     public float distanceMulti;
-    public float distanceOffsetMulti;
+    private float distanceOffsetMulti;
     public float MouseSensibility = 30;
     public Transform headPos;
     public static IN_GAME_MAIN_CAMERA instance;

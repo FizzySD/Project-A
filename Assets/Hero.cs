@@ -76,7 +76,7 @@ public class Hero : MonoBehaviour
 
         currentSpeed = rb.velocity.magnitude;
         anim.SetFloat("Velocity X", currentSpeed);
-        anim.SetFloat("Velocity Z", num);
+        Debug.Log(vector5);
     }
 
 

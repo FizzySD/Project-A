@@ -17,8 +17,8 @@ public class Hero : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        anim = GetComponent<Animator>();
-        currentCamera = GetComponentInChildren<Camera>();
+        anim = GetComponentInChildren<Animator>();
+        currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
     }
     void Start()
     {

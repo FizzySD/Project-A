@@ -8,6 +8,7 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
     private float distance = 10f;
     private Transform _transform;
     public GameObject main_object;
+    public float distanceMulti;
     public float distanceOffsetMulti;
     public Transform headPos;
     public static IN_GAME_MAIN_CAMERA instance;
@@ -31,10 +32,10 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
         _transform = base.transform;
     }
 
-    private void camaraMovement()
+    private void cameraMovement()
     {
         Camera camera = GetComponent<Camera>();
-        distanceOffsetMulti = cameraDistance * (200f - camera.fieldOfView) / 150f;
+        distanceOffsetMulti = 1.3f;
         Vector3 horizontalDirection = _transform.forward;
         horizontalDirection.y = 0f; // Imposta la componente verticale a zero
         horizontalDirection.Normalize(); // Normalizza la direzione orizzontale
@@ -44,8 +45,9 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
         _transform.position -= Vector3.up * (0.6f - cameraDistance) * 2f;
         float num = 1; // mouse speed
 
-        float angle3 = Input.GetAxis("Mouse X") * 10f * num;
-        float num4 = (0f - Input.GetAxis("Mouse Y")) * 10f * num * (float)1;
+        float angle3 = Input.GetAxis("Mouse X") * 10f * num * Time.deltaTime;
+        float num4 = (0f - Input.GetAxis("Mouse Y")) * 10f * num * (float)1 * Time.deltaTime;
+
         _transform.RotateAround(_transform.position, Vector3.up, angle3);
         float num5 = _transform.rotation.eulerAngles.x % 360f;
         float num6 = num5 + num4;
@@ -53,17 +55,18 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
         {
             _transform.RotateAround(_transform.position, _transform.right, num4);
         }
+        _transform.position -= _transform.forward * distance * distanceMulti * distanceOffsetMulti;
+        if (cameraDistance < 0.65f)
+        {
+            _transform.position += _transform.right * Mathf.Max((0.6f - cameraDistance) * 2f, 0.65f);
+        }
 
-        // Applica solo la componente orizzontale di distanceOffsetMulti
-        _transform.position -= horizontalDirection * distance * 0 * distanceOffsetMulti;
     }
-
 
     private void Update()
     {
-        camaraMovement();
+        cameraMovement();
     }
-
 
 
 }

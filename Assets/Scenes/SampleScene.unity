@@ -472,7 +472,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 899356311}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 166c3bb6fadcd304484e7f8c48e0600b, type: 3}
   m_Name: 
@@ -619,6 +619,7 @@ MonoBehaviour:
   main_object: {fileID: 1789451685}
   distanceMulti: 0.64
   distanceOffsetMulti: 1.3
+  MouseSensibility: 30
   headPos: {fileID: 0}
   axes: 0
 --- !u!1 &1789451685 stripped

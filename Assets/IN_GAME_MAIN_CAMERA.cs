@@ -9,6 +9,7 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
     public GameObject main_object;
     public float distanceMulti;
     public float distanceOffsetMulti;
+    public float MouseSensibility = 30;
     public Transform headPos;
     public static IN_GAME_MAIN_CAMERA instance;
     public enum RotationAxes
@@ -44,7 +45,7 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
         _transform.position = ((headPos == null) ? main_object.transform.position : headPos.position);
         _transform.position += Vector3.up * 1;
         _transform.position -= Vector3.up * (0.6f - cameraDistance) * 2f;
-        float num = 1; // mouse speed
+        float num = MouseSensibility; // mouse speed
 
         float angle3 = Input.GetAxis("Mouse X") * 10f * num * Time.deltaTime;
         float num4 = (0f - Input.GetAxis("Mouse Y")) * 10f * num * (float)1 * Time.deltaTime;

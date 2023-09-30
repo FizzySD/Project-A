@@ -41,11 +41,34 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (grounded) {
+        Debug.Log(state);
+        if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
             {
+                state = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
+            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
+            {
+                dodge();
+                return;
+            }
+        }
+
+        switch (state) {
+            case HERO_STATE.GroundDodge:
+                if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) // but for now create a new branch because i did some changes to the animator okayy
+                {
+                    if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
+                        state = HERO_STATE.Idle;
+                         Debug.Log("b");
+                    }
+                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 1f) { // not dodge animation oh like the "0" animÖ wait nvm
+                        state = HERO_STATE.Idle;
+                         Debug.Log("c");
+                    }
+                }
+            break;
         }
     }
 
@@ -228,12 +251,12 @@ public class Hero : MonoBehaviour
                 this.facingDirection = num3 + 180f;
                 this.targetRotation = Quaternion.Euler(0f, this.facingDirection, 0f);
             }
-            this.anim.SetBool("dodge", true);
+            this.anim.SetTrigger("Dodging");
             // this.crossFade("dodge", 0.1f);
         }
         else
         {
-            this.anim.SetBool("dodge", true);
+            this.anim.SetTrigger("Dodging");
             // this.playAnimation("dodge");
             // this.playAnimationAt("dodge", 0.2f);
         }

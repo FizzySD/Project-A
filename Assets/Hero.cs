@@ -9,6 +9,7 @@ public class Hero : MonoBehaviour
     #region Comments
     //so num check if W is pressed or S is pressed, num2 check for A and D
     #endregion
+    public static Hero instance;
     private Rigidbody rb;
     public float currentSpeed;
     private Animator anim;
@@ -17,10 +18,12 @@ public class Hero : MonoBehaviour
     public float maxVelocityChange = 10f;
     private readonly float gravity = 20f;
     private bool grounded;
+    public bool canMove = true;
 
     // Start is called before the first frame update
     private void Awake()
     {
+        instance = this;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
@@ -83,7 +86,8 @@ public class Hero : MonoBehaviour
         {
             num = 1f;
         }
-        if (grounded) {
+        if (grounded && canMove) 
+        {
 
             Vector3 vector5 = Vector3.zero;
             Vector3 vector6 = new Vector3(num, 0f, num2);
@@ -99,7 +103,7 @@ public class Hero : MonoBehaviour
             force.y = 0f;
 
             //smth like that we need to find how to see the current anim
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.18f) // there
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) // there
             {
                 force.y += 8f;
             }

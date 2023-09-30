@@ -76,8 +76,8 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.1978959
-  m_TransitionOffset: 0.06981285
+  m_TransitionDuration: 0.18399757
+  m_TransitionOffset: 0.06981284
   m_ExitTime: 0.56426036
   m_HasExitTime: 1
   m_HasFixedDuration: 1
@@ -114,7 +114,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: FallImpact
-  m_Speed: 3
+  m_Speed: 1.6
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -7851554870709687804}
@@ -128,7 +128,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 463b5d92b26136a4e974cbb3ff539f96, type: 2}
+  m_Motion: {fileID: 7400000, guid: 99ffc8e68dcecf34cbc6172228e7e438, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -408,9 +408,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.2528441
-  m_TransitionOffset: 0
-  m_ExitTime: 0.8423922
+  m_TransitionDuration: 0.2531073
+  m_TransitionOffset: 0.101137675
+  m_ExitTime: 0.86419696
   m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0

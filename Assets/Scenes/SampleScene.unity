@@ -123,12 +123,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!4 &217941143 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
-    type: 3}
-  m_PrefabInstance: {fileID: 5142095839713320984}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -602,12 +596,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 953082475}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.033, y: -0.6, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.183, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 217941143}
+  m_Father: {fileID: 1227062289}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1227062286 stripped
 GameObject:
@@ -636,6 +630,12 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &1227062289 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7360253213300963178, guid: 6a4b706371790a742bd35d1279670b98,
+    type: 3}
+  m_PrefabInstance: {fileID: 5142095839713320984}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1789451685 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6110629574035173403, guid: 6a4b706371790a742bd35d1279670b98,
@@ -1079,7 +1079,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
+    - targetCorrespondingSourceObject: {fileID: 7360253213300963178, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 953082476}

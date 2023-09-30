@@ -10,6 +10,8 @@ public class Hero : MonoBehaviour
     #region Comments
     //so num check if W is pressed or S is pressed, num2 check for A and D
     #endregion
+    public Transform GasPoint;
+    public GameObject gas; 
     public static Hero instance;
     private Rigidbody rb;
     private HERO_STATE _state;
@@ -24,6 +26,10 @@ public class Hero : MonoBehaviour
     private float dashTime;
     private float facingDirection;
     private Quaternion targetRotation;
+    private bool isMounted = false;
+    private float currentGas = 100;
+    private object bulletLeft;
+    private object bulletRight;
 
     // Start is called before the first frame update
     private void Awake()
@@ -32,6 +38,7 @@ public class Hero : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
+        this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
     }
     void Start()
     {
@@ -41,6 +48,7 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        drawRayCast();
         Debug.Log(state);
         if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
@@ -71,15 +79,20 @@ public class Hero : MonoBehaviour
             break;
         }
     }
-
+    
+    public void drawRayCast() {
+        LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
+        LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
+        LayerMask mask3 = mask2 | mask;
+        Debug.DrawRay(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up * 1.1f, Color.red);
+    }
     public bool IsGrounded()
     {
         LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
         LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
         LayerMask mask3 = mask2 | mask;
-        return Physics.Raycast(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up, 1f,  mask3.value);
-    } //iöm lost xd xd
-
+        return Physics.Raycast(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up, 1.1f,  mask3.value);
+    } 
     private void FixedUpdate()
     {   
         Debug.Log(IsGrounded());
@@ -115,6 +128,10 @@ public class Hero : MonoBehaviour
         {
             num = 1f;
         }
+
+        var flag = false;
+        var flag2 = false;
+        var flag3 = false;
         if (grounded && canMove) 
         {
             Vector3 vector5 = Vector3.zero;
@@ -169,7 +186,7 @@ public class Hero : MonoBehaviour
             force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
             force.y = 0f;
             //smth like that we need to find how to see the current anim
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) // there
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.18f) // there
             {
                 force.y += 8f;
             }
@@ -189,6 +206,77 @@ public class Hero : MonoBehaviour
 
             currentSpeed = rb.velocity.magnitude;
             // Debug.Log(vector5);
+        }
+        else {
+            if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("dash") && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump"))
+            {
+                var vector7 = new Vector3(num, 0f, num2);
+                var num7 = getGlobalFacingDirection(num, num2);
+                var vector8 = getGlobaleFacingVector3(num7);
+                var d3 = vector7.magnitude <= 0.95f ? vector7.magnitude >= 0.25f ? vector7.magnitude : 0f : 1f;
+                vector8 *= d3;
+                vector8 *= 150 / 10f * 2f;
+                if (num == 0f && num2 == 0f)
+                {
+                    if (state == HERO_STATE.Attack)
+                    {
+                        vector8 *= 0f;
+                    }
+
+                    num7 = -874f;
+                }
+
+                if (num7 != -874f)
+                {
+                    facingDirection = num7;
+                    targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
+                }
+
+                if (!flag2 && !flag3 && !isMounted && Input.GetKey(KeyCode.LeftShift) && currentGas > 0f)
+                {
+                    Instantiate(gas,GasPoint.transform.position, GasPoint.transform.rotation);
+                    if (num != 0f || num2 != 0f)
+                    {
+                        
+                        rb.AddForce(vector8, ForceMode.Acceleration);
+                    }
+                    else
+                    {
+                    
+                        rb.AddForce(transform.forward * vector8.magnitude, ForceMode.Acceleration);
+                    }
+                    
+                    flag = true;
+                }
+            }
+        }
+        bool flag7 = false;
+        if ((this.bulletLeft != null) || (this.bulletRight != null))
+        {
+            // if (((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchLeft && this.bulletLeft.GetComponent<Bullet>().isHooked()))
+            // {
+            //     flag7 = true;
+            // }
+            // if (((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchRight && this.bulletRight.GetComponent<Bullet>().isHooked()))
+            // {
+            //     flag7 = true;
+            // }
+        }
+        if (flag7)
+        {
+            this.rb.AddForce(new Vector3(0f, -10f * this.rb.mass, 0f));
+        }
+        else
+        {
+            this.rb.AddForce(new Vector3(0f, -this.gravity * this.rb.mass, 0f));
+        }
+        if (this.currentSpeed > 10f)
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, Mathf.Min((float) 100f, (float) (this.currentSpeed + 40f)), 0.1f);
+        }
+        else
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, 50f, 0.1f);
         }
     }
 

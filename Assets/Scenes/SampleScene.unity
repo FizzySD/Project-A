@@ -253,7 +253,7 @@ GameObject:
   - component: {fileID: 765356660}
   - component: {fileID: 765356659}
   - component: {fileID: 765356658}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -572,6 +572,33 @@ MonoBehaviour:
   MouseSensibility: 30
   headPos: {fileID: 0}
   axes: 0
+--- !u!1 &1227062286 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2122936717595975465, guid: 6a4b706371790a742bd35d1279670b98,
+    type: 3}
+  m_PrefabInstance: {fileID: 5142095839713320984}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &1227062288
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227062286}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 47fa0441b6af1c64384ba3e8f19610e9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1789451685 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6110629574035173403, guid: 6a4b706371790a742bd35d1279670b98,
@@ -586,6 +613,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4776089265481527013, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
+      propertyPath: m_Center.y
+      value: 0.09
+      objectReference: {fileID: 0}
     - target: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -594,7 +626,7 @@ PrefabInstance:
     - target: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.836
+      value: 3.095
       objectReference: {fileID: 0}
     - target: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
@@ -641,10 +673,19 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero
       objectReference: {fileID: 0}
+    - target: {fileID: 8459488966699032318, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
+      propertyPath: m_UseGravity
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2122936717595975465, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1227062288}
   m_SourcePrefab: {fileID: 100100000, guid: 6a4b706371790a742bd35d1279670b98, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

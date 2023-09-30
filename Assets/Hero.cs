@@ -26,6 +26,8 @@ public class Hero : MonoBehaviour
     private Quaternion targetRotation;
     private bool isMounted = false;
     private float currentGas = 100;
+    private object bulletLeft;
+    private object bulletRight;
 
     // Start is called before the first frame update
     private void Awake()
@@ -34,6 +36,7 @@ public class Hero : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
+        this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
     }
     void Start()
     {
@@ -175,7 +178,7 @@ public class Hero : MonoBehaviour
             force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
             force.y = 0f;
             //smth like that we need to find how to see the current anim
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) // there
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.18f) // there
             {
                 force.y += 8f;
             }
@@ -237,6 +240,26 @@ public class Hero : MonoBehaviour
                     flag = true;
                 }
             }
+        }
+        bool flag7 = false;
+        if ((this.bulletLeft != null) || (this.bulletRight != null))
+        {
+            // if (((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchLeft && this.bulletLeft.GetComponent<Bullet>().isHooked()))
+            // {
+            //     flag7 = true;
+            // }
+            // if (((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchRight && this.bulletRight.GetComponent<Bullet>().isHooked()))
+            // {
+            //     flag7 = true;
+            // }
+        }
+        if (flag7)
+        {
+            this.rb.AddForce(new Vector3(0f, -10f * this.rb.mass, 0f));
+        }
+        else
+        {
+            this.rb.AddForce(new Vector3(0f, -this.gravity * this.rb.mass, 0f));
         }
         if (this.currentSpeed > 10f)
         {

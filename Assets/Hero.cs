@@ -35,12 +35,21 @@ public class Hero : MonoBehaviour
     }
     void Start()
     {
-        
+        this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (IsGrounded())
+        {
+            grounded = true;
+        }
+        else
+        {
+            grounded = false;
+        }
+        anim.SetBool("isGrounded", grounded);
         Debug.Log(state);
         if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
@@ -83,20 +92,16 @@ public class Hero : MonoBehaviour
     private void FixedUpdate()
     {   
         Debug.Log(IsGrounded());
-        if (IsGrounded())
-        {
-            grounded = true;
-        }
-        else 
-        {
-            grounded = false;
-        }
-        anim.SetBool("isGrounded", grounded);
         InputHandler();
     }
 
     public void InputHandler() 
     {
+        if (!grounded)
+        {
+            rb.AddForce(new Vector3(0f, (0f - gravity) * rb.mass, 0f));
+        }
+
         float num2 = 0;
         float num = 0;
         if(Input.GetKey(KeyCode.W))
@@ -159,9 +164,7 @@ public class Hero : MonoBehaviour
                     }
 
                     break;
-                
             }
-
             
             Vector3 velocity = rb.velocity;
             Vector3 force = vector5 - velocity;

@@ -61,11 +61,11 @@ public class Hero : MonoBehaviour
                 {
                     if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
                         state = HERO_STATE.Idle;
-                         Debug.Log("b");
+                        
                     }
-                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 1f) { // not dodge animation oh like the "0" animÖ wait nvm
+                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.95f) { // not dodge animation oh like the "0" animÖ wait nvm
                         state = HERO_STATE.Idle;
-                         Debug.Log("c");
+                    
                     }
                 }
             break;
@@ -188,7 +188,7 @@ public class Hero : MonoBehaviour
             // }
 
             currentSpeed = rb.velocity.magnitude;
-            Debug.Log(vector5);
+            // Debug.Log(vector5);
         }
     }
 
@@ -245,7 +245,7 @@ public class Hero : MonoBehaviour
             {
                 num = 1f;
             }
-            float num3 = this.getGlobalFacingDirection(num2, num);
+            float num3 = this.getGlobalFacingDirection(num, num2);
             if ((num2 != 0f) || (num != 0f))
             {
                 this.facingDirection = num3 + 180f;

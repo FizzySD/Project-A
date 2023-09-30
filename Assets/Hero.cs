@@ -231,21 +231,21 @@ public class Hero : MonoBehaviour
             float num = 0;
             if(Input.GetKey(KeyCode.W))
             {
-                num2 = 1f;
+                num = 1f;
             }
             else if (Input.GetKey(KeyCode.S)) 
             {
-                num2 = -1f;
+                num = -1f;
             }
             if (Input.GetKey(KeyCode.A)) 
             {
-                num = -1f;
+                num2 = -1f;
             }
             else if(Input.GetKey(KeyCode.D)) 
             {
-                num = 1f;
+                num2 = 1f;
             }
-            float num3 = this.getGlobalFacingDirection(num, num2);
+            float num3 = this.getGlobalFacingDirection(num2, num);
             if ((num2 != 0f) || (num != 0f))
             {
                 this.facingDirection = num3 + 180f;

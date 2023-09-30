@@ -59,8 +59,13 @@ public class Hero : MonoBehaviour
             case HERO_STATE.GroundDodge:
                 if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) // but for now create a new branch because i did some changes to the animator okayy
                 {
-                    if (grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.9f) {
+                    if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
                         state = HERO_STATE.Idle;
+                        
+                    }
+                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.95f) { // not dodge animation oh like the "0" animÖ wait nvm
+                        state = HERO_STATE.Idle;
+                    
                     }
                 }
             break;
@@ -183,7 +188,7 @@ public class Hero : MonoBehaviour
             // }
 
             currentSpeed = rb.velocity.magnitude;
-            Debug.Log(vector5);
+            // Debug.Log(vector5);
         }
     }
 

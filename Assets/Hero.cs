@@ -46,6 +46,7 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        drawRayCast();
         Debug.Log(state);
         if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
@@ -76,15 +77,20 @@ public class Hero : MonoBehaviour
             break;
         }
     }
-
+    
+    public void drawRayCast() {
+        LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
+        LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
+        LayerMask mask3 = mask2 | mask;
+        Debug.DrawRay(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up * 1.1f, Color.red);
+    }
     public bool IsGrounded()
     {
         LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
         LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
         LayerMask mask3 = mask2 | mask;
-        return Physics.Raycast(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up, 1f,  mask3.value);
-    } //iöm lost xd xd
-
+        return Physics.Raycast(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up, 1.1f,  mask3.value);
+    } 
     private void FixedUpdate()
     {   
         Debug.Log(IsGrounded());

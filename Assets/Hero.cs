@@ -124,7 +124,7 @@ public class Hero : MonoBehaviour
         var flag = false;
         var flag2 = false;
         var flag3 = false;
-        if (grounded ) 
+        if (grounded && canMove) 
         {
             Vector3 vector5 = Vector3.zero;
             switch(this.state) {

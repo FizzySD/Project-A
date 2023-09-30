@@ -24,6 +24,8 @@ public class Hero : MonoBehaviour
     private float dashTime;
     private float facingDirection;
     private Quaternion targetRotation;
+    private bool isMounted = false;
+    private float currentGas = 100;
 
     // Start is called before the first frame update
     private void Awake()
@@ -115,7 +117,11 @@ public class Hero : MonoBehaviour
         {
             num = 1f;
         }
-        if (grounded && canMove) 
+
+        var flag = false;
+        var flag2 = false;
+        var flag3 = false;
+        if (grounded ) 
         {
             Vector3 vector5 = Vector3.zero;
             switch(this.state) {
@@ -189,6 +195,56 @@ public class Hero : MonoBehaviour
 
             currentSpeed = rb.velocity.magnitude;
             // Debug.Log(vector5);
+        }
+        else {
+            if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("dash") && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump"))
+            {
+                var vector7 = new Vector3(num, 0f, num2);
+                var num7 = getGlobalFacingDirection(num, num2);
+                var vector8 = getGlobaleFacingVector3(num7);
+                var d3 = vector7.magnitude <= 0.95f ? vector7.magnitude >= 0.25f ? vector7.magnitude : 0f : 1f;
+                vector8 *= d3;
+                vector8 *= 150 / 10f * 2f;
+                if (num == 0f && num2 == 0f)
+                {
+                    if (state == HERO_STATE.Attack)
+                    {
+                        vector8 *= 0f;
+                    }
+
+                    num7 = -874f;
+                }
+
+                if (num7 != -874f)
+                {
+                    facingDirection = num7;
+                    targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
+                }
+
+                if (!flag2 && !flag3 && !isMounted && Input.GetKey(KeyCode.LeftShift) && currentGas > 0f)
+                {
+                    if (num != 0f || num2 != 0f)
+                    {
+                        
+                        rb.AddForce(vector8, ForceMode.Acceleration);
+                    }
+                    else
+                    {
+                    
+                        rb.AddForce(transform.forward * vector8.magnitude, ForceMode.Acceleration);
+                    }
+                    
+                    flag = true;
+                }
+            }
+        }
+        if (this.currentSpeed > 10f)
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, Mathf.Min((float) 100f, (float) (this.currentSpeed + 40f)), 0.1f);
+        }
+        else
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, 50f, 0.1f);
         }
     }
 

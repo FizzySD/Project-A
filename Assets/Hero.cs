@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class Hero : MonoBehaviour
@@ -13,6 +15,9 @@ public class Hero : MonoBehaviour
     public float speed = 9.5f;
     private Camera currentCamera;
     public float maxVelocityChange = 10f;
+    private readonly float gravity = 20f;
+    private bool grounded;
+
     // Start is called before the first frame update
     private void Awake()
     {
@@ -28,11 +33,33 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (grounded) {
+            if (Input.GetKeyDown(KeyCode.LeftShift)) 
+            {
+                this.anim.SetTrigger("jump");
+            }
+        }
     }
 
-    private void FixedUpdate()
+    public bool IsGrounded()
     {
+        LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
+        LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
+        LayerMask mask3 = mask2 | mask;
+        return Physics.Raycast(base.gameObject.transform.position + Vector3.up * 0.1f, -Vector3.up, 1f,  mask3.value);
+    } //iöm lost xd xd
+
+    private void FixedUpdate()
+    {   
+        Debug.Log(IsGrounded());
+        if (IsGrounded())
+        {
+            grounded = true;
+        }
+        else 
+        {
+            grounded = false;
+        }
         InputHandler();
     }
 
@@ -56,27 +83,42 @@ public class Hero : MonoBehaviour
         {
             num = 1f;
         }
-        Vector3 vector5 = Vector3.zero;
-        Vector3 vector6 = new Vector3(num, 0f, num2);
-        float num3 = getGlobalFacingDirection(num, num2);
-        vector5 = getGlobaleFacingVector3(num3);
-        float num4 = ((!(vector6.magnitude <= 0.95f)) ? 1f : ((vector6.magnitude >= 0.25f) ? vector6.magnitude : 0f));
-        vector5 *= num4;
-        vector5 *= speed;
-        Vector3 velocity = rb.velocity;
-        Vector3 force = vector5 - velocity;
-        force.x = Mathf.Clamp(force.x, 0f - maxVelocityChange, maxVelocityChange);
-        force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
-        force.y = 0f;
+        if (grounded) {
 
-        rb.AddForce(force,ForceMode.VelocityChange);
-        rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, Quaternion.Euler(0f, num3, 0f), Time.deltaTime * 10f);
+            Vector3 vector5 = Vector3.zero;
+            Vector3 vector6 = new Vector3(num, 0f, num2);
+            float num3 = getGlobalFacingDirection(num, num2);
+            vector5 = getGlobaleFacingVector3(num3);
+            float num4 = ((!(vector6.magnitude <= 0.95f)) ? 1f : ((vector6.magnitude >= 0.25f) ? vector6.magnitude : 0f));
+            vector5 *= num4;
+            vector5 *= speed;
+            Vector3 velocity = rb.velocity;
+            Vector3 force = vector5 - velocity;
+            force.x = Mathf.Clamp(force.x, 0f - maxVelocityChange, maxVelocityChange);
+            force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
+            force.y = 0f;
 
+            //smth like that we need to find how to see the current anim
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.18f) // there
+            {
+                force.y += 8f;
+            }
 
+            rb.AddForce(force,ForceMode.VelocityChange);
+            rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, Quaternion.Euler(0f, num3, 0f), Time.deltaTime * 10f);
 
-        currentSpeed = rb.velocity.magnitude;
-        anim.SetFloat("Velocity X", currentSpeed);
-        Debug.Log(vector5);
+            if(vector6.magnitude > 0.1f)
+            {
+                anim.SetBool("isRunning", true);
+            }
+            else 
+            {
+                anim.SetBool("isRunning", false); //ok no idea now lol
+            }
+
+            currentSpeed = rb.velocity.magnitude;
+            Debug.Log(vector5);
+        }
     }
 
 

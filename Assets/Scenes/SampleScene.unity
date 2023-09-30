@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18227571, g: 0.22798362, b: 0.30733973, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -123,6 +123,12 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &217941143 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
+    type: 3}
+  m_PrefabInstance: {fileID: 5142095839713320984}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,13 +217,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalRotation: {x: 0.42261523, y: -0.4501936, z: 0.001592208, w: 0.78658736}
+  m_LocalPosition: {x: -32.14, y: 3, z: -18.56}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 41.781, y: -71.433, z: -30.459}
 --- !u!114 &410087042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -460,7 +466,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -572,6 +578,37 @@ MonoBehaviour:
   MouseSensibility: 30
   headPos: {fileID: 0}
   axes: 0
+--- !u!1 &953082475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 953082476}
+  m_Layer: 0
+  m_Name: GasEmitter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &953082476
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953082475}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.033, y: -0.6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 217941143}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1227062286 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2122936717595975465, guid: 6a4b706371790a742bd35d1279670b98,
@@ -830,9 +867,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4999235497053481390, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
+      propertyPath: gas
+      value: 
+      objectReference: {fileID: 2026627183185307779, guid: a2bcc13015dc4dc42b5bbcb4fb55c450,
+        type: 3}
+    - target: {fileID: 4999235497053481390, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
       propertyPath: canMove
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4999235497053481390, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
+      propertyPath: GasPoint
+      value: 
+      objectReference: {fileID: 953082476}
     - target: {fileID: 5164425398055368603, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1030,7 +1078,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 7324420850198842872, guid: 6a4b706371790a742bd35d1279670b98,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 953082476}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2122936717595975465, guid: 6a4b706371790a742bd35d1279670b98,
         type: 3}

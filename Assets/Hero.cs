@@ -59,13 +59,8 @@ public class Hero : MonoBehaviour
             case HERO_STATE.GroundDodge:
                 if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) // but for now create a new branch because i did some changes to the animator okayy
                 {
-                    if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
+                    if (grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.9f) {
                         state = HERO_STATE.Idle;
-                         Debug.Log("b");
-                    }
-                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 1f) { // not dodge animation oh like the "0" animÖ wait nvm
-                        state = HERO_STATE.Idle;
-                         Debug.Log("c");
                     }
                 }
             break;
@@ -231,19 +226,19 @@ public class Hero : MonoBehaviour
             float num = 0;
             if(Input.GetKey(KeyCode.W))
             {
-                num2 = 1f;
+                num = 1f;
             }
             else if (Input.GetKey(KeyCode.S)) 
             {
-                num2 = -1f;
+                num = -1f;
             }
             if (Input.GetKey(KeyCode.A)) 
             {
-                num = -1f;
+                num2 = -1f;
             }
             else if(Input.GetKey(KeyCode.D)) 
             {
-                num = 1f;
+                num2 = 1f;
             }
             float num3 = this.getGlobalFacingDirection(num2, num);
             if ((num2 != 0f) || (num != 0f))

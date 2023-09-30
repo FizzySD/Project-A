@@ -95,6 +95,13 @@ public class Hero : MonoBehaviour
     } 
     private void FixedUpdate()
     {   
+
+        currentSpeed = rb.velocity.magnitude;
+
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack3_2") && !anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra"))
+        {
+            rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, targetRotation, Time.fixedDeltaTime * 6f);
+        }
         Debug.Log(IsGrounded());
         if (IsGrounded())
         {

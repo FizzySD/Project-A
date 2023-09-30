@@ -63,6 +63,7 @@ public class Hero : MonoBehaviour
         {
             grounded = false;
         }
+        anim.SetBool("isGrounded", grounded);
         InputHandler();
     }
 

@@ -10,6 +10,8 @@ public class Hero : MonoBehaviour
     #region Comments
     //so num check if W is pressed or S is pressed, num2 check for A and D
     #endregion
+    public Transform GasPoint;
+    public GameObject gas; 
     public static Hero instance;
     private Rigidbody rb;
     private HERO_STATE _state;
@@ -232,6 +234,7 @@ public class Hero : MonoBehaviour
 
                 if (!flag2 && !flag3 && !isMounted && Input.GetKey(KeyCode.LeftShift) && currentGas > 0f)
                 {
+                    Instantiate(gas,GasPoint.transform.position, GasPoint.transform.rotation);
                     if (num != 0f || num2 != 0f)
                     {
                         

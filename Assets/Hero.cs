@@ -143,7 +143,7 @@ public class Hero : MonoBehaviour
         var flag = false;
         var flag2 = false;
         var flag3 = false;
-        if (grounded && canMove && !anim.GetCurrentAnimatorStateInfo(0).IsName("FallImpact")) 
+        if (grounded) 
         {
             Vector3 movementVector = Vector3.zero;
             switch(this.State) {

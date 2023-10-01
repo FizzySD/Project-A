@@ -49,30 +49,30 @@ public class Hero : MonoBehaviour
     void Update()
     {
         drawRayCast();
-        Debug.Log(state);
-        if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
+        Debug.Log(State);
+        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
             {
-                state = HERO_STATE.Idle;
+                State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
             if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
             {
-                dodge();
+                Dodge();
                 return;
             }
         }
 
-        switch (state) {
+        switch (State) {
             case HERO_STATE.GroundDodge:
                 if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) // but for now create a new branch because i did some changes to the animator okayy
                 {
                     if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
-                        state = HERO_STATE.Idle;
+                        State = HERO_STATE.Idle;
                         
                     }
                     if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.95f) { // not dodge animation oh like the "0" animÖ wait nvm
-                        state = HERO_STATE.Idle;
+                        State = HERO_STATE.Idle;
                     
                     }
                 }
@@ -117,23 +117,23 @@ public class Hero : MonoBehaviour
 
     public void InputHandler() 
     {
-        float num2 = 0;
-        float num = 0;
+        float verticalMovement = 0;
+        float horizontalMovement = 0;
         if(Input.GetKey(KeyCode.W))
         {
-            num2 = 1f;
+            verticalMovement = 1f;
         }
         else if (Input.GetKey(KeyCode.S)) 
         {
-            num2 = -1f;
+            verticalMovement = -1f;
         }
         if (Input.GetKey(KeyCode.A)) 
         {
-            num = -1f;
+            horizontalMovement = -1f;
         }
         else if(Input.GetKey(KeyCode.D)) 
         {
-            num = 1f;
+            horizontalMovement = 1f;
         }
 
         var flag = false;
@@ -141,44 +141,44 @@ public class Hero : MonoBehaviour
         var flag3 = false;
         if (grounded && canMove && !anim.GetCurrentAnimatorStateInfo(0).IsName("FallImpact")) 
         {
-            Vector3 vector5 = Vector3.zero;
-            switch(this.state) {
+            Vector3 movementVector = Vector3.zero;
+            switch(this.State) {
                 case HERO_STATE.GroundDodge:
                     {
                         if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.2f && anim.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
                         {
-                            vector5 = -transform.forward * 2.4f * speed;
+                            movementVector = -transform.forward * 2.4f * speed;
                         }
 
                         if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.8f)
                         {
-                            vector5 =  rb.velocity;
-                            vector5 *= 0.9f;
+                            movementVector =  rb.velocity;
+                            movementVector *= 0.9f;
                         }
 
                         break;
                     }
 
                 case HERO_STATE.Idle:
-                    Vector3 vector6 = new Vector3(num, 0f, num2);
-                    float num3 = getGlobalFacingDirection(num, num2);
-                    vector5 = getGlobaleFacingVector3(num3);
-                    float num4 = (!(vector6.magnitude <= 0.95f)) ? 1f : ((vector6.magnitude >= 0.25f) ? vector6.magnitude : 0f);
-                    vector5 *= num4;
-                    vector5 *= speed;
+                    Vector3 inputVector = new Vector3(horizontalMovement, 0f, verticalMovement);
+                    float globalDirection = GetGlobalFacingDirection(horizontalMovement, verticalMovement);
+                    movementVector = GetGlobalFacingVector3(globalDirection);
+                    float magnitudeModifer = inputVector.magnitude > 0.95f ? 1f : (inputVector.magnitude >= 0.25f ? inputVector.magnitude : 0f);
+                    movementVector *= magnitudeModifer;
+                    movementVector *= speed;
                     
-                    if (num != 0f || num2 != 0f) {
+                    if (horizontalMovement != 0f || verticalMovement != 0f) {
                         anim.SetBool("isRunning", true);
                     }
                     else 
                     {
                         anim.SetBool("isRunning", false);
-                        num3 = -874f;
+                        globalDirection = -874f;
                     }
 
-                    if (num3 != -874f)
+                    if (globalDirection != -874f)
                     {
-                        facingDirection = num3;
+                        facingDirection = globalDirection;
                         targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
                     }
 
@@ -188,7 +188,7 @@ public class Hero : MonoBehaviour
 
             
             Vector3 velocity = rb.velocity;
-            Vector3 force = vector5 - velocity;
+            Vector3 force = movementVector - velocity;
             force.x = Mathf.Clamp(force.x, 0f - maxVelocityChange, maxVelocityChange);
             force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
             force.y = 0f;
@@ -197,60 +197,50 @@ public class Hero : MonoBehaviour
             {
                 force.y += 8f;
             }
-            if (state != HERO_STATE.Attack) {
+            if (State != HERO_STATE.Attack) {
                 rb.AddForce(force, ForceMode.VelocityChange);
                 rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, Quaternion.Euler(0f, facingDirection, 0f), Time.deltaTime * 10f);
             }
 
-            // if(vector6.magnitude > 0.1f)
-            // {
-            //     anim.SetBool("isRunning", true);
-            // }
-            // else 
-            // {
-            //     anim.SetBool("isRunning", false); //ok no idea now lol
-            // }
-
             currentSpeed = rb.velocity.magnitude;
-            // Debug.Log(vector5);
         }
         else {
             if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("dash") && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump"))
             {
-                var vector7 = new Vector3(num, 0f, num2);
-                var num7 = getGlobalFacingDirection(num, num2);
-                var vector8 = getGlobaleFacingVector3(num7);
-                var d3 = vector7.magnitude <= 0.95f ? vector7.magnitude >= 0.25f ? vector7.magnitude : 0f : 1f;
-                vector8 *= d3;
-                vector8 *= 150 / 10f * 2f;
-                if (num == 0f && num2 == 0f)
+                var inputVector = new Vector3(horizontalMovement, 0f, verticalMovement);
+                var globalDirection = GetGlobalFacingDirection(horizontalMovement, verticalMovement);
+                var movementVector = GetGlobalFacingVector3(globalDirection);
+                var magnitudeModifer = inputVector.magnitude <= 0.95f ? inputVector.magnitude >= 0.25f ? inputVector.magnitude : 0f : 1f;
+                movementVector *= magnitudeModifer;
+                movementVector *= 150 / 10f * 2f;
+                if (horizontalMovement == 0f && verticalMovement == 0f)
                 {
-                    if (state == HERO_STATE.Attack)
+                    if (State == HERO_STATE.Attack)
                     {
-                        vector8 *= 0f;
+                        movementVector *= 0f;
                     }
 
-                    num7 = -874f;
+                    globalDirection = -874f;
                 }
 
-                if (num7 != -874f)
+                if (globalDirection != -874f)
                 {
-                    facingDirection = num7;
+                    facingDirection = globalDirection;
                     targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
                 }
 
                 if (!flag2 && !flag3 && !isMounted && Input.GetKey(KeyCode.LeftShift) && currentGas > 0f)
                 {
                     Instantiate(gas,GasPoint.transform.position, GasPoint.transform.rotation);
-                    if (num != 0f || num2 != 0f)
+                    if (horizontalMovement != 0f || verticalMovement != 0f)
                     {
                         
-                        rb.AddForce(vector8, ForceMode.Acceleration);
+                        rb.AddForce(movementVector, ForceMode.Acceleration);
                     }
                     else
                     {
                     
-                        rb.AddForce(transform.forward * vector8.magnitude, ForceMode.Acceleration);
+                        rb.AddForce(transform.forward * movementVector.magnitude, ForceMode.Acceleration);
                     }
                     
                     flag = true;
@@ -288,62 +278,60 @@ public class Hero : MonoBehaviour
     }
 
 
-    private Vector3 getGlobaleFacingVector3(float resultAngle)
+    private Vector3 GetGlobalFacingVector3(float angle)
     {
-        float num = 0f - resultAngle + 90f;
-        float x = Mathf.Cos(num * 0.01745329f);
-        return new Vector3(x, 0f, Mathf.Sin(num * 0.01745329f));
+        float angleInDegrees = 0f - angle + 90f;
+        float x = Mathf.Cos(angleInDegrees * 0.01745329f);
+        return new Vector3(x, 0f, Mathf.Sin(angleInDegrees * 0.01745329f));
+    }
+    private Vector3 GetGlobalFacingVector3(float horizontalMovement, float verticalMovement)
+    {
+        float angle = 0f - GetGlobalFacingDirection(horizontalMovement, verticalMovement) + 90f;
+        float x = Mathf.Cos(angle * 0.01745329f);
+        return new Vector3(x, 0f, Mathf.Sin(angle * 0.01745329f));
     }
 
-    private Vector3 getGlobaleFacingVector3(float horizontal, float vertical)
+    private float GetGlobalFacingDirection(float horizontalMovement, float verticalMovement)
     {
-        float num = 0f - getGlobalFacingDirection(horizontal, vertical) + 90f;
-        float x = Mathf.Cos(num * 0.01745329f);
-        return new Vector3(x, 0f, Mathf.Sin(num * 0.01745329f));
-    }
-
-
-    private float getGlobalFacingDirection(float horizontal, float vertical)
-    {
-        if (vertical == 0f && horizontal == 0f)
+        if (verticalMovement == 0f && horizontalMovement == 0f)
         {
-            return base.transform.rotation.eulerAngles.y;
+            return transform.rotation.eulerAngles.y;
         }
-        float y = currentCamera.transform.rotation.eulerAngles.y;
-        float num = Mathf.Atan2(vertical, horizontal) * 57.29578f;
-        num = 0f - num + 90f;
-        return y + num;
+        float cameraRotationY = currentCamera.transform.rotation.eulerAngles.y;
+        float angle = Mathf.Atan2(verticalMovement, horizontalMovement) * 57.29578f;
+        angle = 0f - angle + 90f;
+        return cameraRotationY + angle;
     }
     
 
-    private void dodge(bool offTheWall = false)
+    private void Dodge(bool offTheWall = false)
     {
         
-        this.state = HERO_STATE.GroundDodge;
+        this.State = HERO_STATE.GroundDodge;
         if (!offTheWall)
         {
-            float num2 = 0;
-            float num = 0;
+            float verticalMovement = 0;
+            float horizontalMovement = 0;
             if(Input.GetKey(KeyCode.W))
             {
-                num = 1f;
+                verticalMovement = 1f;
             }
             else if (Input.GetKey(KeyCode.S)) 
             {
-                num = -1f;
+                verticalMovement = -1f;
             }
             if (Input.GetKey(KeyCode.A)) 
             {
-                num2 = -1f;
+                horizontalMovement = -1f;
             }
             else if(Input.GetKey(KeyCode.D)) 
             {
-                num2 = 1f;
+                horizontalMovement = 1f;
             }
-            float num3 = this.getGlobalFacingDirection(num2, num);
-            if ((num2 != 0f) || (num != 0f))
+            float globalDirection = this.GetGlobalFacingDirection(horizontalMovement, verticalMovement);
+            if ((verticalMovement != 0f) || (horizontalMovement != 0f))
             {
-                this.facingDirection = num3 + 180f;
+                this.facingDirection = globalDirection + 180f;
                 this.targetRotation = Quaternion.Euler(0f, this.facingDirection, 0f);
             }
             this.anim.SetTrigger("Dodging");
@@ -358,7 +346,7 @@ public class Hero : MonoBehaviour
             
         
     }
-    private HERO_STATE state
+    private HERO_STATE State
     {
         get
         {

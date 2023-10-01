@@ -98,7 +98,7 @@ public class Hero : MonoBehaviour
 
         currentSpeed = rb.velocity.magnitude;
 
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack3_2") && !anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra"))
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack3_2") && !anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("FallImpact"))
         {
             rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, targetRotation, Time.fixedDeltaTime * 6f);
         }
@@ -139,7 +139,7 @@ public class Hero : MonoBehaviour
         var flag = false;
         var flag2 = false;
         var flag3 = false;
-        if (grounded && canMove) 
+        if (grounded && canMove && !anim.GetCurrentAnimatorStateInfo(0).IsName("FallImpact")) 
         {
             Vector3 vector5 = Vector3.zero;
             switch(this.state) {

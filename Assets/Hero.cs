@@ -25,6 +25,8 @@ public class Hero : MonoBehaviour
     public bool canMove = true;
     private float dashTime;
     private float facingDirection;
+    private Vector3 dashV;
+    private float originVM;
     private Quaternion targetRotation;
     private bool isMounted = false;
     public float currentGas = 100f;
@@ -34,6 +36,13 @@ public class Hero : MonoBehaviour
     private float useGasSpeed = 0.2f;
     private bool _cancelGasDisable = false;
     private ParticleSystem smoke3Dmg;
+    private DateTime _lastBurstTime = DateTime.Now;
+    private float uTapTime = -1f;
+    private float dTapTime = -1f;
+    private float lTapTime = -1f;
+    private float rTapTime = -1f;
+    private float invincible = 3f;
+    private float bulletTimer = 0f;
 
     // Start is called before the first frame update
     private void Awake()
@@ -53,14 +62,54 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        var dt = Time.deltaTime;
+        if (invincible > 0f)
+        {
+            invincible -= dt;
+        }
+        
+        if (bulletTimer > 0)
+        {
+            bulletTimer -= dt;
+        }
+
+        if (!grounded && State != HERO_STATE.AirDodge)
+        {
+            bool rebindedTrigger = Input.GetKey(KeyCode.LeftControl);
+            if (rebindedTrigger)
+            {
+                if (Input.GetKey(KeyCode.W))
+                {
+                    Dash(0f, 1f);
+                }
+                else if (Input.GetKey(KeyCode.S))
+                {
+                    Dash(0f, -1f);
+                }
+                else if (Input.GetKey(KeyCode.A))
+                {
+                    Dash(-1f, 0f);
+                }
+                else if (Input.GetKey(KeyCode.D))
+                {
+                    Dash(1f, 0f);
+                }
+            }
+            else
+            {
+                
+                CheckDashDoubleTap();
+                
+            }
+        }
         drawRayCast();
         if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) {
-            if (Input.GetKeyDown(KeyCode.LeftShift)) 
+            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
             {
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
-            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
+            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
             {
                 Dodge();
                 return;
@@ -80,10 +129,154 @@ public class Hero : MonoBehaviour
                     
                     }
                 }
-            break;
+                break;
+            case HERO_STATE.AirDodge:
+                if (dashTime > 0f)
+                {
+                    dashTime -= dt;
+                    if (currentSpeed > originVM)
+                    {
+                        rb.AddForce(-rb.velocity * dt * 1.7f, ForceMode.VelocityChange);
+                    }
+                }
+                else
+                {
+                    dashTime = 0f;
+                    State = HERO_STATE.Idle;
+                }
+
+                break;
         }
     }
-    
+
+    private void Dash(float horizontal, float vertical)
+    {
+        DateTime now = DateTime.Now;
+        if (dashTime > 0f
+            || currentGas <= 0f
+            || isMounted
+            && (now - _lastBurstTime) < TimeSpan.FromMilliseconds(300))
+        {
+            return;
+        }
+
+        UseGas(totalGas * 0.04f);
+        facingDirection = GetGlobalFacingDirection(horizontal, vertical);
+        dashV = GetGlobalFacingVector3(facingDirection);
+        originVM = currentSpeed;
+        var rotation = Quaternion.Euler(0f, facingDirection, 0f);
+        rb.rotation = rotation;
+        targetRotation = rotation;
+        // if (IN_GAME_MAIN_CAMERA.GameType == GameType.Single)
+        // {
+        //     Pool.Enable("FX/boost_smoke", baseT.position, baseT.rotation);
+        // }
+        // else
+        // {
+        //     Pool.NetworkEnable("FX/boost_smoke", baseT.position, baseT.rotation);
+        // }
+
+        dashTime = 0.5f;
+        // CrossFade("dash", 0.1f);
+        // baseA["dash"].time = 0.1f;
+        anim.SetTrigger("Dashing");
+        State = HERO_STATE.AirDodge;
+        // FalseAttack();
+        rb.AddForce(dashV * 40f, ForceMode.VelocityChange);
+        _lastBurstTime = now;
+    }
+
+    private void CheckDashDoubleTap()
+    {
+        if (uTapTime >= 0f)
+        {
+            uTapTime += Time.deltaTime;
+            if (uTapTime > 0.2f)
+            {
+                uTapTime = -1f;
+            }
+        }
+
+        if (dTapTime >= 0f)
+        {
+            dTapTime += Time.deltaTime;
+            if (dTapTime > 0.2f)
+            {
+                dTapTime = -1f;
+            }
+        }
+
+        if (lTapTime >= 0f)
+        {
+            lTapTime += Time.deltaTime;
+            if (lTapTime > 0.2f)
+            {
+                lTapTime = -1f;
+            }
+        }
+
+        if (rTapTime >= 0f)
+        {
+            rTapTime += Time.deltaTime;
+            if (rTapTime > 0.2f)
+            {
+                rTapTime = -1f;
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            if (uTapTime == -1f)
+            {
+                uTapTime = 0f;
+            }
+
+            if (uTapTime != 0f)
+            {
+                Dash(0f, 1f);
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            if (dTapTime == -1f)
+            {
+                dTapTime = 0f;
+            }
+
+            if (dTapTime != 0f)
+            {
+                Dash(0f, -1f);
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            if (lTapTime == -1f)
+            {
+                lTapTime = 0f;
+            }
+
+            if (lTapTime != 0f)
+            {
+                Dash(-1f, 0f);
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            if (rTapTime == -1f)
+            {
+                rTapTime = 0f;
+            }
+
+            if (rTapTime != 0f)
+            {
+                Dash(1f, 0f);
+            }
+        }
+    }
+
     public void drawRayCast() {
         LayerMask mask = ((int) 1) << LayerMask.NameToLayer("Ground");
         LayerMask mask2 = ((int) 1) << LayerMask.NameToLayer("EnemyBox");
@@ -197,7 +390,7 @@ public class Hero : MonoBehaviour
             force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
             force.y = 0f;
             //smth like that we need to find how to see the current anim
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.18f) // there
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.05f) // there
             {
                 force.y += 8f;
             }

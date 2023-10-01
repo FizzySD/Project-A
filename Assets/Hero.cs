@@ -10,6 +10,7 @@ public class Hero : MonoBehaviour
     #region Comments
     //so num check if W is pressed or S is pressed, num2 check for A and D
     #endregion
+    public bool isDoingAnimation = false;
     public Transform GasPoint;
     public GameObject gas; 
     public static Hero instance;
@@ -109,7 +110,7 @@ public class Hero : MonoBehaviour
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
-            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && !isDoingAnimation) 
             {
                 Dodge();
                 return;

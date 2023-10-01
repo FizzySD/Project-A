@@ -27,9 +27,13 @@ public class Hero : MonoBehaviour
     private float facingDirection;
     private Quaternion targetRotation;
     private bool isMounted = false;
-    private float currentGas = 100;
+    public float currentGas = 100f;
     private object bulletLeft;
     private object bulletRight;
+    public float totalGas = 100f;
+    private float useGasSpeed = 0.2f;
+    private bool _cancelGasDisable = false;
+    private ParticleSystem smoke3Dmg;
 
     // Start is called before the first frame update
     private void Awake()
@@ -39,6 +43,7 @@ public class Hero : MonoBehaviour
         anim = GetComponentInChildren<Animator>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
         this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
+        smoke3Dmg = base.transform.Find("3dmg_smoke").GetComponent<ParticleSystem>();
     }
     void Start()
     {
@@ -230,7 +235,7 @@ public class Hero : MonoBehaviour
 
                 if (!flag2 && !flag3 && !isMounted && Input.GetKey(KeyCode.LeftShift) && currentGas > 0f)
                 {
-                    Instantiate(gas,GasPoint.transform.position, GasPoint.transform.rotation);
+                    
                     if (horizontalMovement != 0f || verticalMovement != 0f)
                     {
                         
@@ -266,6 +271,35 @@ public class Hero : MonoBehaviour
         {
             this.rb.AddForce(new Vector3(0f, -this.gravity * this.rb.mass, 0f));
         }
+        if (!_cancelGasDisable)
+        {
+            if (flag)
+            {
+                UseGas(useGasSpeed * Time.deltaTime);
+                // if (!smoke3Dmg.enableEmission && IN_GAME_MAIN_CAMERA.GameType != GameType.Single)
+                // {
+                //     BasePV.RPC("net3DMGSMOKE", PhotonTargets.Others, true);
+                // }
+                // Instantiate(gas,GasPoint.transform.position, GasPoint.transform.rotation);
+                var emission = smoke3Dmg.emission;
+                emission.enabled = true;
+            }
+            else
+            {
+            //     if (smoke3Dmg.enableEmission && IN_GAME_MAIN_CAMERA.GameType != GameType.Single)
+            //     {
+            //         BasePV.RPC("net3DMGSMOKE", PhotonTargets.Others, false);
+            //     }
+
+                var emission = smoke3Dmg.emission;
+                emission.enabled = false;
+            }
+        }
+        else
+        {
+            _cancelGasDisable = false;
+        }
+
         if (this.currentSpeed > 10f)
         {
             this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, Mathf.Min((float) 100f, (float) (this.currentSpeed + 40f)), 0.1f);
@@ -344,6 +378,27 @@ public class Hero : MonoBehaviour
         }
             
         
+    }
+    
+    public void FillGas()
+    {
+        this.currentGas = this.totalGas;
+    }
+     private void UseGas(float amount = 0)
+    {
+        
+        if (amount == 0f)
+        {
+            amount = this.useGasSpeed;
+        }
+        if (this.currentGas > 0f)
+        {
+            this.currentGas -= amount;
+            if (this.currentGas < 0f)
+            {
+                this.currentGas = 0f;
+            }
+        }
     }
     private HERO_STATE State
     {

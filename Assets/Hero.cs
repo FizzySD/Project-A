@@ -49,7 +49,6 @@ public class Hero : MonoBehaviour
     void Update()
     {
         drawRayCast();
-        Debug.Log(state);
         if (grounded && (state == HERO_STATE.Idle || state == HERO_STATE.Slide)) {
             if (Input.GetKeyDown(KeyCode.LeftShift)) 
             {

@@ -109,7 +109,7 @@ public class Hero : MonoBehaviour
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
-            else if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
+            else if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
             {
                 Dodge();
                 return;

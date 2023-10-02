@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 
 public class Hero : MonoBehaviour
@@ -10,6 +11,26 @@ public class Hero : MonoBehaviour
     #region Comments
     //so num check if W is pressed or S is pressed, num2 check for A and D
     #endregion
+    private bool QHold;
+    private bool EHold;
+    public Transform lastHook;
+    private GameObject rope;
+    private float launchElapsedTimeR;
+    private float launchElapsedTimeL;
+    public bool isLaunchLeft;
+    public bool isLaunchRight;
+    private bool isLeftHandHooked;
+    private bool isRightHandHooked;
+    private Vector3 launchPointLeft;
+    private Vector3 launchPointRight;
+    private Vector3 launchForce;
+    public GameObject hookRefL1;
+    public GameObject hookRefL2;
+    public GameObject hookRefR1;
+    public GameObject hookRefR2;
+
+
+
     public Transform GasPoint;
     public GameObject gas; 
     public static Hero instance;
@@ -45,8 +66,6 @@ public class Hero : MonoBehaviour
     private float bulletTimer = 0f;
     private string currentAnimation;
     private bool gunner = false;
-    private bool isLeftHandHooked;
-    private bool isRightHandHooked;
     private bool justGrounded;
     private string attackAnimation;
     private bool buttonAttackRelease;
@@ -68,8 +87,73 @@ public class Hero : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {
-        var dt = Time.deltaTime;
+    {   
+        if (Input.GetKey(KeyCode.Q) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
+        {
+            if (bulletLeft != null)
+            {
+                QHold = true;
+            }
+            else
+            {
+                Ray ray4 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                LayerMask layerMask7 = 1 << LayerMask.NameToLayer("Ground");
+                LayerMask layerMask8 = 1 << LayerMask.NameToLayer("EnemyBox");
+                RaycastHit hitInfo4;
+                if (Physics.Raycast(ray4, out hitInfo4, 10000f, ((LayerMask)((int)layerMask8 | (int)layerMask7)).value))
+                {
+                    launchLeftRope(hitInfo4, true);
+                    //rope.Play();
+                }
+            }
+        }
+        else
+        {
+            QHold = false;
+        }
+        if (Input.GetKey(KeyCode.E) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
+        {
+            if (bulletRight != null)
+            {
+                EHold = true;
+            }
+            else
+            {
+                Ray ray5 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                LayerMask layerMask9 = 1 << LayerMask.NameToLayer("Ground");
+                LayerMask layerMask10 = 1 << LayerMask.NameToLayer("EnemyBox");
+                RaycastHit hitInfo5;
+                if (Physics.Raycast(ray5, out hitInfo5, 10000f, ((LayerMask)((int)layerMask10 | (int)layerMask9)).value))
+                {
+                    launchRightRope(hitInfo5, true);
+                    //rope.Play();
+                }
+            }
+        }
+        else
+        {
+            EHold = false;
+        }
+        if (Input.GetKey(KeyCode.Space) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
+        {
+            QHold = true;
+            EHold = true;
+            if (bulletLeft == null && bulletRight == null)
+            {
+                Ray ray6 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                LayerMask layerMask11 = 1 << LayerMask.NameToLayer("Ground");
+                LayerMask layerMask12 = 1 << LayerMask.NameToLayer("EnemyBox");
+                RaycastHit hitInfo6;
+                if (Physics.Raycast(ray6, out hitInfo6, 1000000f, ((LayerMask)((int)layerMask12 | (int)layerMask11)).value))
+                {
+                    launchLeftRope(hitInfo6, false);
+                    launchRightRope(hitInfo6, false);
+                    //rope.Play();
+                }
+            }
+        }
+    
+    var dt = Time.deltaTime;
         if (invincible > 0f)
         {
             invincible -= dt;
@@ -174,6 +258,115 @@ public class Hero : MonoBehaviour
         }
     }
 
+    public void launch(Vector3 des, bool left = true, bool leviMode = false)
+    {
+        if (left)
+        {
+            isLaunchLeft = true;
+            launchElapsedTimeL = 0f;
+        }
+        else
+        {
+            isLaunchRight = true;
+            launchElapsedTimeR = 0f;
+        }
+        /*
+        if (state == HERO_STATE.Grab)
+        {
+            return;
+        }
+        */
+        if (isMounted)
+        {
+            //unmounted();
+        }
+        if (State != HERO_STATE.Attack)
+        {
+            Idle();
+        }
+        Vector3 vector = des - base.transform.position;
+        if (left)
+        {
+            launchPointLeft = des;
+        }
+        else
+        {
+            launchPointRight = des;
+        }
+        vector.Normalize();
+        vector *= 20f;
+        if (bulletLeft != null && bulletRight != null && bulletLeft.GetComponent<Bullet>().isHooked() && bulletRight.GetComponent<Bullet>().isHooked())
+        {
+            vector *= 0.8f;
+        }
+        leviMode = ((anim.IsPlaying("attack5") || anim.IsPlaying("special_petra")) ? true : false);
+        if (!leviMode)
+        {
+            //falseAttack();
+            Idle();
+            /*
+            if (useGun)
+            {
+                crossFade("AHSS_hook_forward_both", 0.1f);
+            }
+            */
+            if (left && !isRightHandHooked)
+            {
+                CrossFade("air_hook_l_just", 0.1f);
+            }
+            else if (!left && !isLeftHandHooked)
+            {
+                CrossFade("air_hook_r_just", 0.1f);
+            }
+            else
+            {
+                CrossFade("dash", 0.1f);
+                anim["dash"].time = 0f;
+            }
+        }
+        launchForce = vector;
+        if (!leviMode)
+        {
+            if (vector.y < 30f)
+            {
+                launchForce += Vector3.up * (30f - vector.y);
+            }
+            if (des.y >= base.transform.position.y)
+            {
+                launchForce += Vector3.up * (des.y - base.transform.position.y) * 10f;
+            }
+            rb.AddForce(launchForce);
+        }
+        facingDirection = Mathf.Atan2(launchForce.x, launchForce.z) * 57.29578f;
+        Quaternion rotation = Quaternion.Euler(0f, facingDirection, 0f);
+        rb.transform.rotation = rotation;
+        rb.rotation = rotation;
+        targetRotation = rotation;
+        if (leviMode)
+        {
+            launchElapsedTimeR = -100f;
+        }
+        if (anim.IsPlaying("special_petra"))
+        {
+            launchElapsedTimeR = -100f;
+            launchElapsedTimeL = -100f;
+            if (bulletRight != null)
+            {
+                bulletRight.GetComponent<Bullet>().disable();
+                //releaseIfIHookSb();
+            }
+            if (bulletLeft != null)
+            {
+                bulletLeft.GetComponent<Bullet>().disable();
+                //releaseIfIHookSb();
+            }
+        }
+        _cancelGasDisable = true;
+        //sparks.enableEmission = false;
+    }
+
+
+
     private void Dash(float horizontal, float vertical)
     {
         DateTime now = DateTime.Now;
@@ -237,6 +430,7 @@ public class Hero : MonoBehaviour
         State = HERO_STATE.Idle;
         CrossFade("oldStand", 0.1f);
     }
+
 
     private void CheckDashDoubleTap()
     {
@@ -363,8 +557,151 @@ public class Hero : MonoBehaviour
         {
             grounded = false;
         }
+
+        bool flag = false;
+        bool flag2 = false;
+        bool flag3 = false;
+        isLeftHandHooked = false;
+        isRightHandHooked = false;
+        if (isLaunchLeft)
+        {
+            if (bulletLeft != null && bulletLeft.GetComponent<Bullet>().isHooked())
+            {
+                isLeftHandHooked = true;
+                Vector3 vector3 = bulletLeft.transform.position - rb.transform.position;
+                vector3.Normalize();
+                vector3 *= 10f;
+                if (!isLaunchRight)
+                {
+                    vector3 *= 2f;
+                }
+                if (Vector3.Angle(rb.velocity, vector3) > 90f && Input.GetKey(KeyCode.LeftShift))
+                {
+                    flag2 = true;
+                    flag = true;
+                }
+                if (!flag2)
+                {
+                    rb.AddForce(vector3);
+                    if (Vector3.Angle(rb.velocity, vector3) > 90f)
+                    {
+                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
+                    }
+                }
+            }
+            launchElapsedTimeL += Time.deltaTime;
+            if (QHold && currentGas > 0f)
+            {
+                UseGas(useGasSpeed * Time.deltaTime);
+            }
+            else if (launchElapsedTimeL > 0.3f)
+            {
+                isLaunchLeft = false;
+                if (bulletLeft != null)
+                {
+                    bulletLeft.GetComponent<Bullet>().disable();
+                    bulletLeft = null;
+                    flag2 = false;
+                }
+            }
+        }
+        if (isLaunchRight)
+        {
+            if (bulletRight != null && bulletRight.GetComponent<Bullet>().isHooked())
+            {
+                isRightHandHooked = true;
+                Vector3 vector4 = bulletRight.transform.position - rb.transform.position;
+                vector4.Normalize();
+                vector4 *= 10f;
+                if (!isLaunchLeft)
+                {
+                    vector4 *= 2f;
+                }
+                if (Vector3.Angle(rb.velocity, vector4) > 90f && Input.GetKey(KeyCode.LeftShift))
+                {
+                    flag3 = true;
+                    flag = true;
+                }
+                if (!flag3)
+                {
+                    rb.AddForce(vector4);
+                    if (Vector3.Angle(rb.velocity, vector4) > 90f)
+                    {
+                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
+                    }
+                }
+            }
+            launchElapsedTimeR += Time.deltaTime;
+            if (EHold && currentGas > 0f)
+            {
+                UseGas(useGasSpeed * Time.deltaTime);
+            }
+            else if (launchElapsedTimeR > 0.3f)
+            {
+                isLaunchRight = false;
+                if (bulletRight != null)
+                {
+                    bulletRight.GetComponent<Bullet>().disable();
+                    bulletRight = null;
+                    flag3 = false;
+                }
+            }
+        }
         // anim.SetBool("isGrounded", grounded);
         InputHandler();
+    }
+
+    private void launchLeftRope(RaycastHit hit, bool single, int mode = 0)
+    {
+        if (currentGas != 0f)
+        {
+            UseGas();
+            bulletLeft = (GameObject)UnityEngine.Object.Instantiate(Resources.Load("hook"));
+
+            GameObject gameObject = hookRefL2;
+            string launcher_ref = "hookRefL2";
+            bulletLeft.transform.position = gameObject.transform.position;
+            Bullet component = bulletLeft.GetComponent<Bullet>();
+            float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
+            Vector3 vector = hit.point - base.transform.right * num - bulletLeft.transform.position;
+            vector.Normalize();
+            Debug.Log("Sigle :" + single + " Mode: " + mode);
+            if (mode == 1)
+            {
+                component.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject, true);
+            }
+            else
+            {
+                component.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject);
+            }
+            launchPointLeft = Vector3.zero;
+        }
+    }
+
+    private void launchRightRope(RaycastHit hit, bool single, int mode = 0)
+    {
+        if (currentGas != 0f)
+        {
+            UseGas();
+   
+            bulletRight = (GameObject)UnityEngine.Object.Instantiate(Resources.Load("hook"));
+            GameObject gameObject = hookRefR2;
+            string launcher_ref = "hookRefR2";
+            bulletRight.transform.position = gameObject.transform.position;
+            Bullet component = bulletRight.GetComponent<Bullet>();
+            float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
+            Vector3 vector = hit.point + base.transform.right * num - bulletRight.transform.position;
+            vector.Normalize();
+            if (mode == 1)
+            {
+                component.launch(vector * 5f, rb.velocity, launcher_ref, false, base.gameObject, true);
+            }
+            else
+            {
+                component.launch(vector * 3f, rb.velocity, launcher_ref, false, base.gameObject);
+            }
+            launchPointRight = Vector3.zero;
+        }
     }
 
     public void InputHandler() 

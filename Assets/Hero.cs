@@ -73,7 +73,7 @@ public class Hero : MonoBehaviour
             bulletTimer -= dt;
         }
 
-        if (!grounded && State != HERO_STATE.AirDodge)
+        if (!grounded && State != HERO_STATE.AirDodge && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump"))
         {
             bool rebindedTrigger = Input.GetKey(KeyCode.LeftControl);
             if (rebindedTrigger)
@@ -103,13 +103,13 @@ public class Hero : MonoBehaviour
             }
         }
         drawRayCast();
-        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) {
+        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide) && canMove) {
             if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
             {
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
-            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+            else if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
             {
                 Dodge();
                 return;

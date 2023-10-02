@@ -104,7 +104,7 @@ public class Hero : MonoBehaviour
         }
         drawRayCast();
         if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide) && canMove) {
-            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
             {
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");

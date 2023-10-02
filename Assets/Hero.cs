@@ -16,7 +16,7 @@ public class Hero : MonoBehaviour
     private Rigidbody rb;
     private HERO_STATE _state;
     public float currentSpeed;
-    private Animator anim;
+    private Animation anim;
     public float speed = 9.5f;
     private Camera currentCamera;
     public float maxVelocityChange = 10f;
@@ -30,8 +30,8 @@ public class Hero : MonoBehaviour
     private Quaternion targetRotation;
     private bool isMounted = false;
     public float currentGas = 100f;
-    private object bulletLeft;
-    private object bulletRight;
+    private GameObject bulletLeft;
+    private GameObject bulletRight;
     public float totalGas = 100f;
     private float useGasSpeed = 0.2f;
     private bool _cancelGasDisable = false;
@@ -43,13 +43,20 @@ public class Hero : MonoBehaviour
     private float rTapTime = -1f;
     private float invincible = 3f;
     private float bulletTimer = 0f;
+    private string currentAnimation;
+    private bool gunner = false;
+    private bool isLeftHandHooked;
+    private bool isRightHandHooked;
+    private bool justGrounded;
+    private string attackAnimation;
+    private bool buttonAttackRelease;
 
     // Start is called before the first frame update
     private void Awake()
     {
         instance = this;
         rb = GetComponent<Rigidbody>();
-        anim = GetComponentInChildren<Animator>();
+        anim = GetComponentInChildren<Animation>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
         this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
         smoke3Dmg = base.transform.Find("3dmg_smoke").GetComponent<ParticleSystem>();
@@ -103,32 +110,43 @@ public class Hero : MonoBehaviour
             }
         }
         drawRayCast();
-        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) {
-            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) 
+        {
+            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.IsPlaying("oldJump")) 
             {
-                State = HERO_STATE.Idle;
-                this.anim.SetTrigger("jump");
+                Idle();
+                // this.anim.SetTrigger("jump");
+                CrossFade("oldJump", 0.1f);
             }
-            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+            if (Input.GetKeyDown(KeyCode.LeftControl) && !anim.IsPlaying("oldJump")) 
             {
                 Dodge();
                 return;
             }
         }
-
+        Debug.Log(State);
         switch (State) {
             case HERO_STATE.GroundDodge:
-                if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) // but for now create a new branch because i did some changes to the animator okayy
+                if (anim.IsPlaying("oldDodge")) // but for now create a new branch because i did some changes to the animator okayy
                 {
-                    if (!grounded && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.6f) {
-                        State = HERO_STATE.Idle;
+                    if (!grounded && anim["oldDodge"].normalizedTime > 0.6f) 
+                    {
+                        Idle();
                         
                     }
-                    if (anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.95f) { // not dodge animation oh like the "0" animÖ wait nvm
-                        State = HERO_STATE.Idle;
+                    if (anim["oldDodge"].normalizedTime >= 1f) 
+                    { // not dodge animation oh like the "0" animÖ wait nvm
+                        Idle();
                     
                     }
                 }
+                break;
+            case HERO_STATE.Land:
+                if (anim.IsPlaying("dash_land") && anim["dash_land"].normalizedTime >= 1f)
+                {
+                    Idle();
+                }
+
                 break;
             case HERO_STATE.AirDodge:
                 if (dashTime > 0f)
@@ -136,13 +154,20 @@ public class Hero : MonoBehaviour
                     dashTime -= dt;
                     if (currentSpeed > originVM)
                     {
-                        rb.AddForce(-rb.velocity * dt * 1.7f, ForceMode.VelocityChange);
+                        rb.AddForce(1.7f * dt * -rb.velocity, ForceMode.VelocityChange);
                     }
                 }
                 else
                 {
                     dashTime = 0f;
-                    State = HERO_STATE.Idle;
+                    Idle();
+                }
+
+                break;
+            case HERO_STATE.Slide:
+                if (!grounded)
+                {
+                    Idle();
                 }
 
                 break;
@@ -179,13 +204,38 @@ public class Hero : MonoBehaviour
         // }
 
         dashTime = 0.5f;
-        // CrossFade("dash", 0.1f);
-        // baseA["dash"].time = 0.1f;
-        anim.SetTrigger("Dashing");
+        CrossFade("oldDash", 0.1f);
+        anim["oldDash"].time = 0.1f;
+        // anim.SetTrigger("Dashing");
         State = HERO_STATE.AirDodge;
         // FalseAttack();
         rb.AddForce(dashV * 40f, ForceMode.VelocityChange);
         _lastBurstTime = now;
+    }
+
+    public void CrossFade(string aniName, float time)
+    {
+        currentAnimation = aniName;
+        anim.CrossFade(aniName, time);
+        // if (!PhotonNetwork.connected)
+        // {
+        //     return;
+        // }
+
+        // if (BasePV.IsMine)
+        // {
+        //     BasePV.RPC("netCrossFade", PhotonTargets.Others, aniName, time);
+        // }
+    }
+    private void Idle()
+    {
+        // if (State == HeroState.Attack)
+        // {
+        //     FalseAttack();
+        // }
+
+        State = HERO_STATE.Idle;
+        CrossFade("oldStand", 0.1f);
     }
 
     private void CheckDashDoubleTap()
@@ -297,20 +347,23 @@ public class Hero : MonoBehaviour
 
         currentSpeed = rb.velocity.magnitude;
 
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack3_2") && !anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("FallImpact"))
+        if (!anim.IsPlaying("attack3_2") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra"))
         {
             rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, targetRotation, Time.fixedDeltaTime * 6f);
         }
         Debug.Log(IsGrounded());
         if (IsGrounded())
-        {
+        {   
+            if (!grounded) {
+                justGrounded = true;
+            }
             grounded = true;
         }
         else 
         {
             grounded = false;
         }
-        anim.SetBool("isGrounded", grounded);
+        // anim.SetBool("isGrounded", grounded);
         InputHandler();
     }
 
@@ -338,18 +391,54 @@ public class Hero : MonoBehaviour
         var flag = false;
         var flag2 = false;
         var flag3 = false;
+        isLeftHandHooked = false;
+        isRightHandHooked = false;
         if (grounded) 
         {
             Vector3 movementVector = Vector3.zero;
+            if (justGrounded)
+            {
+                if (State != HERO_STATE.Attack || attackAnimation != "attack3_1" && attackAnimation != "attack5" &&
+                    attackAnimation != "special_petra")
+                {
+                    if (State != HERO_STATE.Attack && horizontalMovement == 0f && verticalMovement == 0f && !bulletLeft && !bulletRight &&
+                        State != HERO_STATE.FillGas)
+                    {
+                        State = HERO_STATE.Land;
+                        CrossFade("dash_land", 0.01f);
+                    }
+                    else
+                    {
+                        buttonAttackRelease = true;
+                        if (State != HERO_STATE.Attack &&
+                            rb.velocity.x * rb.velocity.x + rb.velocity.z * rb.velocity.z >
+                            speed * speed * 1.5f && State != HERO_STATE.FillGas)
+                        {
+                            State = HERO_STATE.Slide;
+                            CrossFade("slide", 0.05f);
+                            var velocity1 = rb.velocity;
+                            facingDirection = Mathf.Atan2(velocity1.x, velocity1.z) * 57.29578f;
+                            targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
+                            // sparks.enableEmission = true;
+                        }
+                    }
+                }
+
+                justGrounded = false;
+                movementVector = rb.velocity;
+            }
+
+
+            
             switch(this.State) {
                 case HERO_STATE.GroundDodge:
                     {
-                        if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.2f && anim.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
+                        if (anim["oldDodge"].normalizedTime >= 0.2f && anim["oldDodge"].normalizedTime < 0.8f)
                         {
-                            movementVector = -transform.forward * 2.4f * speed;
+                            movementVector = 2.4f * speed * -transform.forward;
                         }
 
-                        if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.8f)
+                        if (anim["oldDodge"].normalizedTime > 0.8f)
                         {
                             movementVector =  rb.velocity;
                             movementVector *= 0.9f;
@@ -367,11 +456,19 @@ public class Hero : MonoBehaviour
                     movementVector *= speed;
                     
                     if (horizontalMovement != 0f || verticalMovement != 0f) {
-                        anim.SetBool("isRunning", true);
+                        if (!anim.IsPlaying("oldRun") && !anim.IsPlaying("oldJump")) {
+                            
+                            CrossFade("oldRun", 0.1f);
+                            // anim.SetBool("isRunning", true);
+                        }
                     }
                     else 
                     {
-                        anim.SetBool("isRunning", false);
+                        if (!anim.IsPlaying("oldStand") && State != HERO_STATE.Land && !anim.IsPlaying("oldJump")) {
+                            CrossFade("oldStand", 0.1f);
+                            // anim.SetBool("isRunning", false);
+                        }
+                        // anim.SetBool("isRunning", false);
                         globalDirection = -874f;
                     }
 
@@ -382,29 +479,164 @@ public class Hero : MonoBehaviour
                     }
 
                     break;
-                
+                case HERO_STATE.Land:
+                    movementVector = rb.velocity;
+                    movementVector *= 0.96f;
+                    break;
+
+                case HERO_STATE.Slide:
+                    {
+                        movementVector = rb.velocity;
+                        movementVector *= 0.99f;
+                        if (currentSpeed < speed * 1.2f)
+                        {
+                            Idle();
+                            // sparks.enableEmission = false;
+                        }
+
+                        break;
+                    }
             }
 
             
             Vector3 velocity = rb.velocity;
             Vector3 force = movementVector - velocity;
-            force.x = Mathf.Clamp(force.x, 0f - maxVelocityChange, maxVelocityChange);
-            force.z = Mathf.Clamp(force.z, 0f - maxVelocityChange, maxVelocityChange);
+            force.x = Mathf.Clamp(force.x, -maxVelocityChange, maxVelocityChange);
+            force.z = Mathf.Clamp(force.z, -maxVelocityChange, maxVelocityChange);
             force.y = 0f;
             //smth like that we need to find how to see the current anim
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.05f) // there
+            if (anim.IsPlaying("oldJump") && anim["oldJump"].normalizedTime > 0.18f) // there
             {
                 force.y += 8f;
             }
-            if (State != HERO_STATE.Attack) {
+            if (State != HERO_STATE.Attack || !gunner) {
                 rb.AddForce(force, ForceMode.VelocityChange);
                 rb.rotation = Quaternion.Lerp(base.gameObject.transform.rotation, Quaternion.Euler(0f, facingDirection, 0f), Time.deltaTime * 10f);
             }
 
-            currentSpeed = rb.velocity.magnitude;
+            // currentSpeed = rb.velocity.magnitude;
         }
         else {
-            if (!anim.GetCurrentAnimatorStateInfo(0).IsName("attack5") && !anim.GetCurrentAnimatorStateInfo(0).IsName("special_petra") && !anim.GetCurrentAnimatorStateInfo(0).IsName("dash") && !anim.GetCurrentAnimatorStateInfo(0).IsName("jump"))
+
+            if (State == HERO_STATE.Idle && !anim.IsPlaying("oldDash") && !anim.IsPlaying("wallrun") &&
+                !anim.IsPlaying("toRoof") && !anim.IsPlaying("horse_geton") && !anim.IsPlaying("horse_getoff") &&
+                !anim.IsPlaying("air_release") && !isMounted &&
+                (!anim.IsPlaying("air_hook_l_just") || anim["air_hook_l_just"].normalizedTime >= 1f) &&
+                (!anim.IsPlaying("air_hook_r_just") || anim["air_hook_r_just"].normalizedTime >= 1f) ||
+                anim["oldDash"].normalizedTime >= 0.99f)
+            {
+                if (!isLeftHandHooked && !isRightHandHooked &&
+                    (anim.IsPlaying("air_hook_l") || anim.IsPlaying("air_hook_r") || anim.IsPlaying("air_hook")) &&
+                    rb.velocity.y > 20f)
+                {
+                    anim.CrossFade("air_release");
+                }
+                else
+                {
+                    var flag4 = Mathf.Abs(rb.velocity.x) + Mathf.Abs(rb.velocity.z) > 25f;
+                    var flag5 = rb.velocity.y < 0f;
+                    if (!flag4)
+                    {
+                        if (flag5)
+                        {
+                            if (!anim.IsPlaying("air_fall"))
+                            {
+                                CrossFade("air_fall", 0.2f);
+                            }
+                        }
+                        else if (!anim.IsPlaying("air_rise"))
+                        {
+                            CrossFade("air_rise", 0.2f);
+                        }
+                    }
+                    else if (!isLeftHandHooked && !isRightHandHooked)
+                    {
+                        var velocity = rb.velocity;
+                        var cr = -Mathf.Atan2(velocity.z, velocity.x) * 57.29578f;
+                        var num6 = -Mathf.DeltaAngle(cr, transform.rotation.eulerAngles.y - 90f);
+                        if (Mathf.Abs(num6) < 45f)
+                        {
+                            if (!anim.IsPlaying("air2"))
+                            {
+                                CrossFade("air2", 0.2f);
+                            }
+                        }
+                        else if (num6 < 135f && num6 > 0f)
+                        {
+                            if (!anim.IsPlaying("air2_right"))
+                            {
+                                CrossFade("air2_right", 0.2f);
+                            }
+                        }
+                        else if (num6 > -135f && num6 < 0f)
+                        {
+                            if (!anim.IsPlaying("air2_left"))
+                            {
+                                CrossFade("air2_left", 0.2f);
+                            }
+                        }
+                        else if (!anim.IsPlaying("air2_backward"))
+                        {
+                            CrossFade("air2_backward", 0.2f);
+                        }
+                    }
+                    else if (gunner)
+                    {
+                        if (!isRightHandHooked)
+                        {
+                            if (!anim.IsPlaying("AHSS_hook_forward_l"))
+                            {
+                                CrossFade("AHSS_hook_forward_l", 0.1f);
+                            }
+                        }
+                        else if (!isLeftHandHooked)
+                        {
+                            if (!anim.IsPlaying("AHSS_hook_forward_r"))
+                            {
+                                CrossFade("AHSS_hook_forward_r", 0.1f);
+                            }
+                        }
+                        else if (!anim.IsPlaying("AHSS_hook_forward_both"))
+                        {
+                            CrossFade("AHSS_hook_forward_both", 0.1f);
+                        }
+                    }
+                    else if (!isRightHandHooked)
+                    {
+                        if (!anim.IsPlaying("air_hook_l"))
+                        {
+                            CrossFade("air_hook_l", 0.1f);
+                        }
+                    }
+                    else if (!isLeftHandHooked)
+                    {
+                        if (!anim.IsPlaying("air_hook_r"))
+                        {
+                            CrossFade("air_hook_r", 0.1f);
+                        }
+                    }
+                    else if (!anim.IsPlaying("air_hook"))
+                    {
+                        CrossFade("air_hook", 0.1f);
+                    }
+                }
+            }
+
+            if (!anim.IsPlaying("air_rise"))
+            {
+                if (State == HERO_STATE.Idle && anim.IsPlaying("air_release") && anim["air_release"].normalizedTime >= 1f)
+                {
+                    CrossFade("air_rise", 0.2f);
+                }
+
+                if (anim.IsPlaying("horse_getoff") && anim["horse_getoff"].normalizedTime >= 1f)
+                {
+                    CrossFade("air_rise", 0.2f);
+                }
+            }
+
+
+            if (!anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && !anim.IsPlaying("oldDash") && !anim.IsPlaying("oldJump"))
             {
                 var inputVector = new Vector3(horizontalMovement, 0f, verticalMovement);
                 var globalDirection = GetGlobalFacingDirection(horizontalMovement, verticalMovement);
@@ -562,19 +794,50 @@ public class Hero : MonoBehaviour
                 this.facingDirection = globalDirection + 180f;
                 this.targetRotation = Quaternion.Euler(0f, this.facingDirection, 0f);
             }
-            this.anim.SetTrigger("Dodging");
-            // this.crossFade("dodge", 0.1f);
+            // this.anim.SetTrigger("Dodging");
+            CrossFade("oldDodge", 0.1f);
         }
         else
         {
-            this.anim.SetTrigger("Dodging");
-            // this.playAnimation("dodge");
-            // this.playAnimationAt("dodge", 0.2f);
+            // this.anim.SetTrigger("Dodging");
+            PlayAnimation("oldDodge");
+            PlayAnimationAt("oldDodge", 0.2f);
         }
             
         
     }
+
+    private void PlayAnimationAt(string aniName, float normalizedTime)
+    {
+        currentAnimation = aniName;
+        anim.Play(aniName);
+        anim[aniName].normalizedTime = normalizedTime;
+        // if (!PhotonNetwork.connected)
+        // {
+        //     return;
+        // }
+
+        // if (BasePV.IsMine)
+        // {
+        //     BasePV.RPC("netPlayAnimationAt", PhotonTargets.Others, aniName, normalizedTime);
+        // }
+    }
     
+    public void PlayAnimation(string aniName)
+    {
+        currentAnimation = aniName;
+        anim.Play(aniName);
+        // if (!PhotonNetwork.connected)
+        // {
+        //     return;
+        // }
+
+        // if (BasePV.IsMine)
+        // {
+        //     BasePV.RPC("netPlayAnimation", PhotonTargets.Others, aniName);
+        // }
+    }
+
     public void FillGas()
     {
         this.currentGas = this.totalGas;

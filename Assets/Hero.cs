@@ -167,6 +167,8 @@ public class Hero : MonoBehaviour
         var rotation = Quaternion.Euler(0f, facingDirection, 0f);
         rb.rotation = rotation;
         targetRotation = rotation;
+
+        UnityEngine.Object.Instantiate(Resources.Load("FX/GasBurst"), base.transform.position, base.transform.rotation);
         // if (IN_GAME_MAIN_CAMERA.GameType == GameType.Single)
         // {
         //     Pool.Enable("FX/boost_smoke", baseT.position, baseT.rotation);

@@ -109,7 +109,11 @@ public class Hero : MonoBehaviour
                 State = HERO_STATE.Idle;
                 this.anim.SetTrigger("jump");
             }
+<<<<<<< Updated upstream
             else if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump")) 
+=======
+            if (Input.GetKeyDown(KeyCode.LeftControl) && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("jump") && !this.anim.GetCurrentAnimatorStateInfo(0).IsName("dodge")) 
+>>>>>>> Stashed changes
             {
                 Dodge();
                 return;
@@ -349,6 +353,7 @@ public class Hero : MonoBehaviour
 
                         if (anim.GetCurrentAnimatorStateInfo(0).IsName("dodge") && anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.8f)
                         {
+                            Debug.Log("a");
                             movementVector =  rb.velocity;
                             movementVector *= 0.9f;
                         }

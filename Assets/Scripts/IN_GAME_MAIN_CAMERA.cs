@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
+public class IN_GAME_MAIN_CAMERA : MonoBehaviour
 {
     private float cameraDistance = 1.3f;
     private float distance = 10f;
@@ -27,6 +27,11 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
         Cache();
         instance = this;
         base.name = "MainCamera";
+    }
+
+    private void Start() 
+    {
+        // GameManager.gameManager.AddCamera(this);
     }
 
     private void Cache()
@@ -64,7 +69,7 @@ internal class IN_GAME_MAIN_CAMERA : MonoBehaviour
 
     }
 
-    private void Update()
+    public void Update()
     {
         cameraMovement();
     }

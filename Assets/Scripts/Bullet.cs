@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Timeline;
 
@@ -7,29 +8,28 @@ public class Bullet : MonoBehaviour
     private GameObject myRef;
     private float killTime2;
     private bool left = true;
-    private GameObject master;
+    private Hero master;
     private int phase;
     private float killTime;
     private LineRenderer lineRenderer;
     private GameObject rope;
-    private ArrayList nodes = new ArrayList();
+    private List<Vector3> nodes = new List<Vector3>();
     private Vector3 velocity = Vector3.zero;
     private Vector3 velocity2 = Vector3.zero;
+    private bool isdestroying;
 
-
-
-    private void Awake()
+    private void Start()
     {
         rope = (GameObject)Object.Instantiate(Resources.Load("rope"));
         lineRenderer = rope.GetComponent<LineRenderer>();
-        //GameObject.Find("MultiplayerManager").GetComponent<FengGameManagerMKII>().addHook(this);
+        // GameManager.gameManager.AddHook(this);
     }
 
-
-    public void removeMe()
+    public void RemoveMe()
     {
-       Object.Destroy(rope);
-       Object.Destroy(base.gameObject);
+        this.isdestroying = true;
+        Object.Destroy(rope);
+        Object.Destroy(base.gameObject);
     }
 
     public LineRenderer GetHook()
@@ -37,18 +37,34 @@ public class Bullet : MonoBehaviour
         return lineRenderer;
     }
 
-    public bool isHooked()
+    private void OnDestroy() 
+    {
+        // if (GameManager.gameManager != null)
+        // {
+        //     GameManager.gameManager.RemoveHook(this);
+        // }
+        Destroy(this.rope);
+    }
+
+    public bool IsHooked()
     {
         return phase == 1;
     }
-    private void killObject()
-    {
-        Object.Destroy(rope);
-        Object.Destroy(base.gameObject);
-    }
+    // private void KillObject()
+    // {
+    //     Object.Destroy(rope);
+    //     Object.Destroy(base.gameObject);
+    // }
 
-    public void disable()
+    public void Disable()
     {
+        if (transform.parent)
+        {
+            if (master)
+            {
+                master.bulletTimer = 0.5f;
+            }
+        }
         phase = 2;
         killTime = 0f;
         /*
@@ -59,17 +75,27 @@ public class Bullet : MonoBehaviour
         }
         */
     }
-    private void Update()
+    public void Update()
     {
+        if (this.isdestroying)
+        {
+            return;
+        }
+        if (this.master == null)
+        {
+            
+            this.RemoveMe();
+            return;
+        }
         if (phase == 0)
         {
-            setLinePhase0();
+            SetLinePhase();
         }
         else if (phase == 1)
         {
             Vector3 vector = base.transform.position - myRef.transform.position;
             Vector3 vector2 = base.transform.position + myRef.transform.position;
-            Vector3 vector3 = master.gameObject.GetComponent<Rigidbody>().velocity;
+            Vector3 vector3 = master.rb.velocity;
             float magnitude = vector3.magnitude;
             float magnitude2 = vector.magnitude;
             int value = (int)((magnitude2 + magnitude) / 5f);
@@ -97,20 +123,21 @@ public class Bullet : MonoBehaviour
             killTime += Time.deltaTime * 0.2f;
             lineRenderer.startWidth = 0.1f - killTime;
             lineRenderer.endWidth = 0.1f - killTime;
-                if (killTime > 0.1f)
-                {
-                removeMe();
-                }
+            if (killTime > 0.1f)
+            {
+                RemoveMe();
+                return;
+            }
         }
         else if (phase == 4)
         {
             base.gameObject.transform.position += velocity + velocity2 * Time.deltaTime;
             nodes.Add(new Vector3(base.gameObject.transform.position.x, base.gameObject.transform.position.y, base.gameObject.transform.position.z));
-            Vector3 vector6 = myRef.transform.position - (Vector3)nodes[0];
+            Vector3 vector6 = myRef.transform.position - nodes[0];
             for (int k = 0; k <= nodes.Count - 1; k++)
             {
                 lineRenderer.positionCount = nodes.Count;
-                lineRenderer.SetPosition(k, (Vector3)nodes[k] + vector6 * Mathf.Pow(0.5f, k));
+                lineRenderer.SetPosition(k, nodes[k] + vector6 * Mathf.Pow(0.5f, k));
             }
             killTime2 += Time.deltaTime;
             if (killTime2 > 0.8f)
@@ -120,7 +147,8 @@ public class Bullet : MonoBehaviour
                 lineRenderer.endWidth = 0.1f - killTime;
                 if (killTime > 0.1f)
                 {
-                    removeMe();
+                    RemoveMe();
+                    return;
                 }
             }
         }
@@ -154,17 +182,17 @@ public class Bullet : MonoBehaviour
         {
             return;
         }
-        base.gameObject.transform.position += velocity * Time.deltaTime * 50f + velocity2 * Time.deltaTime;
+        base.gameObject.transform.position += (this.velocity * 50f + this.velocity2) * Time.fixedDeltaTime;
         LayerMask layerMask = 1 << LayerMask.NameToLayer("EnemyBox");
         LayerMask layerMask2 = 1 << LayerMask.NameToLayer("Ground");
         LayerMask layerMask3 = 1 << LayerMask.NameToLayer("NetworkObject");
         LayerMask layerMask4 = (int)layerMask | (int)layerMask2 | (int)layerMask3;
         bool flag = false;
-        bool flag2 = false;
-        if ((nodes.Count <= 1) ? Physics.Linecast((Vector3)nodes[^1], base.gameObject.transform.position, out RaycastHit hitInfo, layerMask4.value) : Physics.Linecast((Vector3)nodes[^2], base.gameObject.transform.position, out hitInfo, layerMask4.value))
+        if ((nodes.Count <= 1) ? Physics.Linecast(nodes[^1], base.gameObject.transform.position, out RaycastHit hitInfo, layerMask4.value) : Physics.Linecast(nodes[^2], base.gameObject.transform.position, out hitInfo, layerMask4.value))
         {
             bool flag3 = true;
-            if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("EnemyBox"))
+            Transform tf = hitInfo.collider.transform;
+            if (tf.gameObject.layer == LayerMask.NameToLayer("EnemyBox"))
             {
                 /*
                     if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
@@ -173,12 +201,12 @@ public class Bullet : MonoBehaviour
                         base.photonView.RPC("tieMeToOBJ", PhotonTargets.Others, parameters);
                     }
                 */
-                master.GetComponent<Hero>().lastHook = hitInfo.collider.transform.root;
-                base.transform.parent = hitInfo.collider.transform;
+                master.lastHook = this;
+                base.transform.parent = tf;
             }
-            else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("Ground"))
+            else if (tf.gameObject.layer == LayerMask.NameToLayer("Ground"))
             {
-                master.GetComponent<Hero>().lastHook = null;
+                master.lastHook = null;
             }
             /*
             else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("NetworkObject") && hitInfo.collider.transform.gameObject.tag == "Player" && !leviMode)
@@ -197,13 +225,10 @@ public class Bullet : MonoBehaviour
             {
                 flag3 = false;
             }
-            if (phase == 2)
-            {
-                flag3 = false;
-            }
+
             if (flag3)
             {
-                master.GetComponent<Hero>().launch(hitInfo.point, left, false);
+                master.Launch(hitInfo.point, left, false);
                 base.transform.position = hitInfo.point;
                 if (phase != 2)
                 {
@@ -230,98 +255,107 @@ public class Bullet : MonoBehaviour
         {
             return;
         }
-        killTime2 += Time.deltaTime;
+        killTime2 += Time.fixedDeltaTime;
         if (killTime2 > 0.8f)
         {
             phase = 4;
-        /*
+            /*
             if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
             {
                 object[] parameters5 = new object[1] { 4 };
                 base.photonView.RPC("setPhase", PhotonTargets.Others, parameters5);
             }
-        */
+            */
+            return;
         }
     }
 
 
-    private void setLinePhase0()
+    private void SetLinePhase()
     {
         if (master == null)
         {
             Object.Destroy(rope);
             Object.Destroy(base.gameObject);
+            return;
         }
-        else if (nodes.Count > 0)
+        if (this.nodes.Count <= 0)
         {
-            Vector3 vector = myRef.transform.position - (Vector3)nodes[0];
-            lineRenderer.positionCount = nodes.Count;
-            for (int i = 0; i <= nodes.Count - 1; i++)
-            {
-                lineRenderer.SetPosition(i, (Vector3)nodes[i] + vector * Mathf.Pow(0.75f, i));
-            }
-            if (nodes.Count > 1)
-            {
-                lineRenderer.SetPosition(1, myRef.transform.position);
-            }
+            return;
         }
+
+        Vector3 vector = myRef.transform.position - nodes[0];
+        lineRenderer.positionCount = nodes.Count;
+        for (int i = 0; i <= nodes.Count - 1; i++)
+        {
+            lineRenderer.SetPosition(i, nodes[i] + vector * Mathf.Pow(0.75f, i));
+        }
+        if (nodes.Count > 1)
+        {
+            lineRenderer.SetPosition(1, myRef.transform.position);
+        }
+        
     }
 
-    public void launch(Vector3 v, Vector3 v2, string launcher_ref, bool isLeft, GameObject hero, bool leviMode = false)
+    public void Launch(Vector3 v, Vector3 v2, string launcher_ref, bool isLeft, Hero hero, bool leviMode = false)
     {
-        master = hero;
-        if (phase != 2)
+        if (this.phase == 2)
         {
-            master = hero;
-            velocity = v;
-            float f = Mathf.Acos(Vector3.Dot(v.normalized, v2.normalized)) * 57.29578f;
-            if (Mathf.Abs(f) > 90f)
-            {
-                velocity2 = Vector3.zero;
-            }
-            else
-            {
-                velocity2 = Vector3.Project(v2, v);
-            }
-            if (launcher_ref == "hookRefL1")
-            {
-                myRef = hero.GetComponent<Hero>().hookRefL1;
-            }
-            if (launcher_ref == "hookRefL2")
-            {
-                myRef = hero.GetComponent<Hero>().hookRefL2;
-            }
-            if (launcher_ref == "hookRefR1")
-            {
-                myRef = hero.GetComponent<Hero>().hookRefR1;
-            }
-            if (launcher_ref == "hookRefR2")
-            {
-                myRef = hero.GetComponent<Hero>().hookRefR2;
-            }
-            nodes = new ArrayList();
-            nodes.Add(myRef.transform.position);
-            phase = 0;
-            //this.leviMode = leviMode;
-            left = isLeft;
-            /*
-            if (IN_GAME_MAIN_CAMERA.gametype != 0 && base.photonView.isMine)
-            {
-                object[] parameters = new object[2]
-                {
-                    hero.GetComponent<HERO>().photonView.viewID,
-                    launcher_ref
-                };
-                base.photonView.RPC("myMasterIs", PhotonTargets.Others, parameters);
-                object[] parameters2 = new object[3] { v, velocity2, left };
-                base.photonView.RPC("setVelocityAndLeft", PhotonTargets.Others, parameters2);
-            }
-            */
-            base.transform.position = myRef.transform.position;
-            base.transform.rotation = Quaternion.LookRotation(v.normalized);
-            //SetSkin();
+            return;
         }
-    }
+        
+        master = hero;
+        velocity = v;
+        float f = Mathf.Acos(Vector3.Dot(v.normalized, v2.normalized)) * 57.29578f;
+        if (Mathf.Abs(f) > 90f)
+        {
+            velocity2 = Vector3.zero;
+        }
+        else
+        {
+            velocity2 = Vector3.Project(v2, v);
+        }
+        switch (launcher_ref)
+        {
+            case "hookRefL1":
+                this.myRef = hero.hookRefL1;
+                break;
 
+            case "hookRefL2":
+                this.myRef = hero.hookRefL2;
+                break;
+
+            case "hookRefR1":
+                this.myRef = hero.hookRefR1;
+                break;
+
+            case "hookRefR2":
+                this.myRef = hero.hookRefR2;
+                break;
+        }
+        nodes = new List<Vector3>
+        {
+            myRef.transform.position
+        };
+        phase = 0;
+        //this.leviMode = leviMode;
+        left = isLeft;
+        /*
+        if (IN_GAME_MAIN_CAMERA.gametype != 0 && base.photonView.isMine)
+        {
+            object[] parameters = new object[2]
+            {
+                hero.GetComponent<HERO>().photonView.viewID,
+                launcher_ref
+            };
+            base.photonView.RPC("myMasterIs", PhotonTargets.Others, parameters);
+            object[] parameters2 = new object[3] { v, velocity2, left };
+            base.photonView.RPC("setVelocityAndLeft", PhotonTargets.Others, parameters2);
+        }
+        */
+        base.transform.SetPositionAndRotation(myRef.transform.position, Quaternion.LookRotation(v.normalized));        //SetSkin();
+    }
 }
+
+
 

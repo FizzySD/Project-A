@@ -74,7 +74,7 @@ public class Bullet : MonoBehaviour
             float magnitude2 = vector.magnitude;
             int value = (int)((magnitude2 + magnitude) / 5f);
             value = Mathf.Clamp(value, 2, 6);
-            lineRenderer.SetVertexCount(value);
+            lineRenderer.positionCount = value;
             lineRenderer.SetPosition(0, myRef.transform.position);
             int i = 1;
             float num = Mathf.Pow(magnitude2, 0.3f);
@@ -91,11 +91,12 @@ public class Bullet : MonoBehaviour
         }
         else if (phase == 2)
         {
-            lineRenderer.SetVertexCount(2);
+            lineRenderer.positionCount = 2;
             lineRenderer.SetPosition(0, base.transform.position);
             lineRenderer.SetPosition(1, myRef.transform.position);
             killTime += Time.deltaTime * 0.2f;
-            lineRenderer.SetWidth(0.1f - killTime, 0.1f - killTime);
+            lineRenderer.startWidth = 0.1f - killTime;
+            lineRenderer.endWidth = 0.1f - killTime;
                 if (killTime > 0.1f)
                 {
                 removeMe();
@@ -108,14 +109,15 @@ public class Bullet : MonoBehaviour
             Vector3 vector6 = myRef.transform.position - (Vector3)nodes[0];
             for (int k = 0; k <= nodes.Count - 1; k++)
             {
-                lineRenderer.SetVertexCount(nodes.Count);
+                lineRenderer.positionCount = nodes.Count;
                 lineRenderer.SetPosition(k, (Vector3)nodes[k] + vector6 * Mathf.Pow(0.5f, k));
             }
             killTime2 += Time.deltaTime;
             if (killTime2 > 0.8f)
             {
                 killTime += Time.deltaTime * 0.2f;
-                lineRenderer.SetWidth(0.1f - killTime, 0.1f - killTime);
+                lineRenderer.startWidth = 0.1f - killTime;
+                lineRenderer.endWidth = 0.1f - killTime;
                 if (killTime > 0.1f)
                 {
                     removeMe();
@@ -148,23 +150,22 @@ public class Bullet : MonoBehaviour
             }
         }
         */
-            if (phase != 0)
+        if (phase != 0)
+        {
+            return;
+        }
+        base.gameObject.transform.position += velocity * Time.deltaTime * 50f + velocity2 * Time.deltaTime;
+        LayerMask layerMask = 1 << LayerMask.NameToLayer("EnemyBox");
+        LayerMask layerMask2 = 1 << LayerMask.NameToLayer("Ground");
+        LayerMask layerMask3 = 1 << LayerMask.NameToLayer("NetworkObject");
+        LayerMask layerMask4 = (int)layerMask | (int)layerMask2 | (int)layerMask3;
+        bool flag = false;
+        bool flag2 = false;
+        if ((nodes.Count <= 1) ? Physics.Linecast((Vector3)nodes[^1], base.gameObject.transform.position, out RaycastHit hitInfo, layerMask4.value) : Physics.Linecast((Vector3)nodes[^2], base.gameObject.transform.position, out hitInfo, layerMask4.value))
+        {
+            bool flag3 = true;
+            if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("EnemyBox"))
             {
-                return;
-            }
-            base.gameObject.transform.position += velocity * Time.deltaTime * 50f + velocity2 * Time.deltaTime;
-            LayerMask layerMask = 1 << LayerMask.NameToLayer("EnemyBox");
-            LayerMask layerMask2 = 1 << LayerMask.NameToLayer("Ground");
-            LayerMask layerMask3 = 1 << LayerMask.NameToLayer("NetworkObject");
-            LayerMask layerMask4 = (int)layerMask | (int)layerMask2 | (int)layerMask3;
-            bool flag = false;
-            bool flag2 = false;
-            RaycastHit hitInfo;
-            if ((nodes.Count <= 1) ? Physics.Linecast((Vector3)nodes[nodes.Count - 1], base.gameObject.transform.position, out hitInfo, layerMask4.value) : Physics.Linecast((Vector3)nodes[nodes.Count - 2], base.gameObject.transform.position, out hitInfo, layerMask4.value))
-            {
-                bool flag3 = true;
-                if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("EnemyBox"))
-                {
                 /*
                     if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
                     {
@@ -172,75 +173,75 @@ public class Bullet : MonoBehaviour
                         base.photonView.RPC("tieMeToOBJ", PhotonTargets.Others, parameters);
                     }
                 */
-                    master.GetComponent<Hero>().lastHook = hitInfo.collider.transform.root;
-                    base.transform.parent = hitInfo.collider.transform;
-                }
-                else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("Ground"))
-                {
-                    master.GetComponent<Hero>().lastHook = null;
-                }
-                /*
-                else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("NetworkObject") && hitInfo.collider.transform.gameObject.tag == "Player" && !leviMode)
-                {               
-                    if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
-                    {
-                        object[] parameters2 = new object[1] { hitInfo.collider.transform.root.gameObject.GetPhotonView().viewID };
-                        base.photonView.RPC("tieMeToOBJ", PhotonTargets.Others, parameters2);
-                    }
-                    master.GetComponent<HERO>().hookToHuman(hitInfo.collider.transform.root.gameObject, base.transform.position);
-                    base.transform.parent = hitInfo.collider.transform;
-                    master.GetComponent<HERO>().lastHook = null;
-                }
-                */
-                else
-                {
-                    flag3 = false;
-                }
-                if (phase == 2)
-                {
-                    flag3 = false;
-                }
-                if (flag3)
-                {
-                    master.GetComponent<Hero>().launch(hitInfo.point, left, false);
-                    base.transform.position = hitInfo.point;
-                    if (phase != 2)
-                    {
-                        phase = 1;
-                        /*
-                        if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
-                        {
-                            object[] parameters3 = new object[1] { 1 };
-                            base.photonView.RPC("setPhase", PhotonTargets.Others, parameters3);
-                            object[] parameters4 = new object[1] { base.transform.position };
-                            base.photonView.RPC("tieMeTo", PhotonTargets.Others, parameters4);
-                        }
-                        if (leviMode)
-                        {
-                            getSpiral(master.transform.position, master.transform.rotation.eulerAngles);
-                        }
-                        */
-                        flag = true;
-                    }
-                }
+                master.GetComponent<Hero>().lastHook = hitInfo.collider.transform.root;
+                base.transform.parent = hitInfo.collider.transform;
             }
-            nodes.Add(new Vector3(base.gameObject.transform.position.x, base.gameObject.transform.position.y, base.gameObject.transform.position.z));
-            if (flag)
+            else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("Ground"))
             {
-                return;
+                master.GetComponent<Hero>().lastHook = null;
             }
-            killTime2 += Time.deltaTime;
-            if (killTime2 > 0.8f)
-            {
-                phase = 4;
             /*
+            else if (hitInfo.collider.transform.gameObject.layer == LayerMask.NameToLayer("NetworkObject") && hitInfo.collider.transform.gameObject.tag == "Player" && !leviMode)
+            {               
                 if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
                 {
-                    object[] parameters5 = new object[1] { 4 };
-                    base.photonView.RPC("setPhase", PhotonTargets.Others, parameters5);
+                    object[] parameters2 = new object[1] { hitInfo.collider.transform.root.gameObject.GetPhotonView().viewID };
+                    base.photonView.RPC("tieMeToOBJ", PhotonTargets.Others, parameters2);
                 }
-            */
+                master.GetComponent<HERO>().hookToHuman(hitInfo.collider.transform.root.gameObject, base.transform.position);
+                base.transform.parent = hitInfo.collider.transform;
+                master.GetComponent<HERO>().lastHook = null;
             }
+            */
+            else
+            {
+                flag3 = false;
+            }
+            if (phase == 2)
+            {
+                flag3 = false;
+            }
+            if (flag3)
+            {
+                master.GetComponent<Hero>().launch(hitInfo.point, left, false);
+                base.transform.position = hitInfo.point;
+                if (phase != 2)
+                {
+                    phase = 1;
+                    /*
+                    if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
+                    {
+                        object[] parameters3 = new object[1] { 1 };
+                        base.photonView.RPC("setPhase", PhotonTargets.Others, parameters3);
+                        object[] parameters4 = new object[1] { base.transform.position };
+                        base.photonView.RPC("tieMeTo", PhotonTargets.Others, parameters4);
+                    }
+                    if (leviMode)
+                    {
+                        getSpiral(master.transform.position, master.transform.rotation.eulerAngles);
+                    }
+                    */
+                    flag = true;
+                }
+            }
+        }
+        nodes.Add(new Vector3(base.gameObject.transform.position.x, base.gameObject.transform.position.y, base.gameObject.transform.position.z));
+        if (flag)
+        {
+            return;
+        }
+        killTime2 += Time.deltaTime;
+        if (killTime2 > 0.8f)
+        {
+            phase = 4;
+        /*
+            if (IN_GAME_MAIN_CAMERA.gametype == GAMETYPE.MULTIPLAYER)
+            {
+                object[] parameters5 = new object[1] { 4 };
+                base.photonView.RPC("setPhase", PhotonTargets.Others, parameters5);
+            }
+        */
+        }
     }
 
 
@@ -254,7 +255,7 @@ public class Bullet : MonoBehaviour
         else if (nodes.Count > 0)
         {
             Vector3 vector = myRef.transform.position - (Vector3)nodes[0];
-            lineRenderer.SetVertexCount(nodes.Count);
+            lineRenderer.positionCount = nodes.Count;
             for (int i = 0; i <= nodes.Count - 1; i++)
             {
                 lineRenderer.SetPosition(i, (Vector3)nodes[i] + vector * Mathf.Pow(0.75f, i));

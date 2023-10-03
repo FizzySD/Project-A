@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Timeline;
 
@@ -14,7 +15,7 @@ public class Hero : MonoBehaviour
     private bool QHold;
     private bool EHold;
     public Transform lastHook;
-    private GameObject rope;
+    private AudioSource rope;
     private float launchElapsedTimeR;
     private float launchElapsedTimeL;
     public bool isLaunchLeft;
@@ -51,8 +52,8 @@ public class Hero : MonoBehaviour
     private Quaternion targetRotation;
     private bool isMounted = false;
     public float currentGas = 100f;
-    private GameObject bulletLeft;
-    private GameObject bulletRight;
+    private Bullet bulletLeft;
+    private Bullet bulletRight;
     public float totalGas = 100f;
     private float useGasSpeed = 0.2f;
     private bool _cancelGasDisable = false;
@@ -69,6 +70,8 @@ public class Hero : MonoBehaviour
     private bool justGrounded;
     private string attackAnimation;
     private bool buttonAttackRelease;
+    private float reelAxis;
+    private bool almostSingleHook;
 
     // Start is called before the first frame update
     private void Awake()
@@ -88,173 +91,173 @@ public class Hero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {   
-        if (Input.GetKey(KeyCode.Q) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
-        {
-            if (bulletLeft != null)
-            {
-                QHold = true;
-            }
-            else
-            {
-                Ray ray4 = currentCamera.ScreenPointToRay(Input.mousePosition);
-                LayerMask layerMask7 = 1 << LayerMask.NameToLayer("Ground");
-                LayerMask layerMask8 = 1 << LayerMask.NameToLayer("EnemyBox");
-                RaycastHit hitInfo4;
-                if (Physics.Raycast(ray4, out hitInfo4, 10000f, ((LayerMask)((int)layerMask8 | (int)layerMask7)).value))
-                {
-                    launchLeftRope(hitInfo4, true);
-                    //rope.Play();
-                }
-            }
-        }
-        else
-        {
-            QHold = false;
-        }
-        if (Input.GetKey(KeyCode.E) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
-        {
-            if (bulletRight != null)
-            {
-                EHold = true;
-            }
-            else
-            {
-                Ray ray5 = currentCamera.ScreenPointToRay(Input.mousePosition);
-                LayerMask layerMask9 = 1 << LayerMask.NameToLayer("Ground");
-                LayerMask layerMask10 = 1 << LayerMask.NameToLayer("EnemyBox");
-                RaycastHit hitInfo5;
-                if (Physics.Raycast(ray5, out hitInfo5, 10000f, ((LayerMask)((int)layerMask10 | (int)layerMask9)).value))
-                {
-                    launchRightRope(hitInfo5, true);
-                    //rope.Play();
-                }
-            }
-        }
-        else
-        {
-            EHold = false;
-        }
-        if (Input.GetKey(KeyCode.Space) && ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle))
-        {
-            QHold = true;
-            EHold = true;
-            if (bulletLeft == null && bulletRight == null)
-            {
-                Ray ray6 = currentCamera.ScreenPointToRay(Input.mousePosition);
-                LayerMask layerMask11 = 1 << LayerMask.NameToLayer("Ground");
-                LayerMask layerMask12 = 1 << LayerMask.NameToLayer("EnemyBox");
-                RaycastHit hitInfo6;
-                if (Physics.Raycast(ray6, out hitInfo6, 1000000f, ((LayerMask)((int)layerMask12 | (int)layerMask11)).value))
-                {
-                    launchLeftRope(hitInfo6, false);
-                    launchRightRope(hitInfo6, false);
-                    //rope.Play();
-                }
-            }
-        }
     
     var dt = Time.deltaTime;
-        if (invincible > 0f)
-        {
-            invincible -= dt;
-        }
-        
-        if (bulletTimer > 0)
-        {
-            bulletTimer -= dt;
-        }
+    if (invincible > 0f)
+    {
+        invincible -= dt;
+    }
+    
+    if (bulletTimer > 0)
+    {
+        bulletTimer -= dt;
+    }
 
-        if (!grounded && State != HERO_STATE.AirDodge)
+    if (!grounded && State != HERO_STATE.AirDodge)
+    {
+        bool rebindedTrigger = Input.GetKey(KeyCode.LeftControl);
+        if (rebindedTrigger)
         {
-            bool rebindedTrigger = Input.GetKey(KeyCode.LeftControl);
-            if (rebindedTrigger)
+            if (Input.GetKey(KeyCode.W))
             {
-                if (Input.GetKey(KeyCode.W))
+                Dash(0f, 1f);
+            }
+            else if (Input.GetKey(KeyCode.S))
+            {
+                Dash(0f, -1f);
+            }
+            else if (Input.GetKey(KeyCode.A))
+            {
+                Dash(-1f, 0f);
+            }
+            else if (Input.GetKey(KeyCode.D))
+            {
+                Dash(1f, 0f);
+            }
+        }
+        else
+        {
+            
+            CheckDashDoubleTap();
+            
+        }
+    }
+    drawRayCast();
+    if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) 
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.IsPlaying("oldJump")) 
+        {
+            Idle();
+            // this.anim.SetTrigger("jump");
+            CrossFade("oldJump", 0.1f);
+        }
+        if (Input.GetKeyDown(KeyCode.LeftControl) && !anim.IsPlaying("oldJump")) 
+        {
+            Dodge();
+            return;
+        }
+    }
+    Debug.Log(State);
+    switch (State) {
+        case HERO_STATE.GroundDodge:
+            if (anim.IsPlaying("oldDodge")) // but for now create a new branch because i did some changes to the animator okayy
+            {
+                if (!grounded && anim["oldDodge"].normalizedTime > 0.6f) 
                 {
-                    Dash(0f, 1f);
+                    Idle();
+                    
                 }
-                else if (Input.GetKey(KeyCode.S))
-                {
-                    Dash(0f, -1f);
+                if (anim["oldDodge"].normalizedTime >= 1f) 
+                { // not dodge animation oh like the "0" animÖ wait nvm
+                    Idle();
+                
                 }
-                else if (Input.GetKey(KeyCode.A))
+            }
+            break;
+        case HERO_STATE.Land:
+            if (anim.IsPlaying("dash_land") && anim["dash_land"].normalizedTime >= 1f)
+            {
+                Idle();
+            }
+
+            break;
+        case HERO_STATE.AirDodge:
+            if (dashTime > 0f)
+            {
+                dashTime -= dt;
+                if (currentSpeed > originVM)
                 {
-                    Dash(-1f, 0f);
-                }
-                else if (Input.GetKey(KeyCode.D))
-                {
-                    Dash(1f, 0f);
+                    rb.AddForce(1.7f * dt * -rb.velocity, ForceMode.VelocityChange);
                 }
             }
             else
             {
-                
-                CheckDashDoubleTap();
-                
+                dashTime = 0f;
+                Idle();
             }
-        }
-        drawRayCast();
-        if (grounded && (State == HERO_STATE.Idle || State == HERO_STATE.Slide)) 
-        {
-            if (Input.GetKeyDown(KeyCode.LeftShift) && !anim.IsPlaying("oldJump")) 
+
+            break;
+        case HERO_STATE.Slide:
+            if (!grounded)
             {
                 Idle();
-                // this.anim.SetTrigger("jump");
-                CrossFade("oldJump", 0.1f);
             }
-            if (Input.GetKeyDown(KeyCode.LeftControl) && !anim.IsPlaying("oldJump")) 
-            {
-                Dodge();
-                return;
-            }
-        }
-        Debug.Log(State);
-        switch (State) {
-            case HERO_STATE.GroundDodge:
-                if (anim.IsPlaying("oldDodge")) // but for now create a new branch because i did some changes to the animator okayy
-                {
-                    if (!grounded && anim["oldDodge"].normalizedTime > 0.6f) 
-                    {
-                        Idle();
-                        
-                    }
-                    if (anim["oldDodge"].normalizedTime >= 1f) 
-                    { // not dodge animation oh like the "0" animÖ wait nvm
-                        Idle();
-                    
-                    }
-                }
-                break;
-            case HERO_STATE.Land:
-                if (anim.IsPlaying("dash_land") && anim["dash_land"].normalizedTime >= 1f)
-                {
-                    Idle();
-                }
 
-                break;
-            case HERO_STATE.AirDodge:
-                if (dashTime > 0f)
+            break;
+        }
+        if ((!anim.IsPlaying("attack3_1") && !anim.IsPlaying("attack5") && !anim.IsPlaying("special_petra") && State != HERO_STATE.Grab) || State == HERO_STATE.Idle) {
+
+            if (Input.GetKey(KeyCode.Q))
+            {
+                if (bulletLeft != null)
                 {
-                    dashTime -= dt;
-                    if (currentSpeed > originVM)
-                    {
-                        rb.AddForce(1.7f * dt * -rb.velocity, ForceMode.VelocityChange);
-                    }
+                    QHold = true;
                 }
                 else
                 {
-                    dashTime = 0f;
-                    Idle();
+                    Ray ray4 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                    LayerMask layerMask7 = 1 << LayerMask.NameToLayer("Ground");
+                    LayerMask layerMask8 = 1 << LayerMask.NameToLayer("EnemyBox");
+                    if (Physics.Raycast(ray4, out RaycastHit hitInfo4, 10000f, ((LayerMask)((int)layerMask8 | (int)layerMask7)).value))
+                    {
+                        LaunchLeftRope(hitInfo4, true);
+                        //rope.Play();
+                    }
                 }
-
-                break;
-            case HERO_STATE.Slide:
-                if (!grounded)
+            }
+            else
+            {
+                QHold = false;
+            }
+            if (Input.GetKey(KeyCode.E))
+            {
+                if (bulletRight != null)
                 {
-                    Idle();
+                    EHold = true;
                 }
-
-                break;
+                else
+                {
+                    Ray ray5 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                    LayerMask layerMask9 = 1 << LayerMask.NameToLayer("Ground");
+                    LayerMask layerMask10 = 1 << LayerMask.NameToLayer("EnemyBox");
+                    if (Physics.Raycast(ray5, out RaycastHit hitInfo5, 10000f, ((LayerMask)((int)layerMask10 | (int)layerMask9)).value))
+                    {
+                        LaunchRightRope(hitInfo5, true);
+                        //rope.Play();
+                    }
+                }
+            }
+            else
+            {
+                EHold = false;
+            }
+            if (Input.GetKey(KeyCode.Space))
+            {
+                QHold = true;
+                EHold = true;
+                if (bulletLeft == null && bulletRight == null)
+                {
+                    Ray ray6 = currentCamera.ScreenPointToRay(Input.mousePosition);
+                    LayerMask layerMask11 = 1 << LayerMask.NameToLayer("Ground");
+                    LayerMask layerMask12 = 1 << LayerMask.NameToLayer("EnemyBox");
+                    if (Physics.Raycast(ray6, out RaycastHit hitInfo6, 1000000f, ((LayerMask)((int)layerMask12 | (int)layerMask11)).value))
+                    {
+                        LaunchLeftRope(hitInfo6, false);
+                        LaunchRightRope(hitInfo6, false);
+                        //rope.Play();
+                    }
+                }
+            }
         }
     }
 
@@ -295,11 +298,11 @@ public class Hero : MonoBehaviour
         }
         vector.Normalize();
         vector *= 20f;
-        if (bulletLeft != null && bulletRight != null && bulletLeft.GetComponent<Bullet>().isHooked() && bulletRight.GetComponent<Bullet>().isHooked())
+        if (bulletLeft != null && bulletRight != null && bulletLeft.isHooked() && bulletRight.isHooked())
         {
             vector *= 0.8f;
         }
-        leviMode = ((anim.IsPlaying("attack5") || anim.IsPlaying("special_petra")) ? true : false);
+        leviMode = anim.IsPlaying("attack5") || anim.IsPlaying("special_petra");
         if (!leviMode)
         {
             //falseAttack();
@@ -320,8 +323,8 @@ public class Hero : MonoBehaviour
             }
             else
             {
-                CrossFade("dash", 0.1f);
-                anim["dash"].time = 0f;
+                CrossFade("oldDash", 0.1f);
+                anim["oldDash"].time = 0f;
             }
         }
         launchForce = vector;
@@ -352,12 +355,12 @@ public class Hero : MonoBehaviour
             launchElapsedTimeL = -100f;
             if (bulletRight != null)
             {
-                bulletRight.GetComponent<Bullet>().disable();
+                bulletRight.disable();
                 //releaseIfIHookSb();
             }
             if (bulletLeft != null)
             {
-                bulletLeft.GetComponent<Bullet>().disable();
+                bulletLeft.disable();
                 //releaseIfIHookSb();
             }
         }
@@ -558,147 +561,58 @@ public class Hero : MonoBehaviour
             grounded = false;
         }
 
-        bool flag = false;
-        bool flag2 = false;
-        bool flag3 = false;
-        isLeftHandHooked = false;
-        isRightHandHooked = false;
-        if (isLaunchLeft)
-        {
-            if (bulletLeft != null && bulletLeft.GetComponent<Bullet>().isHooked())
-            {
-                isLeftHandHooked = true;
-                Vector3 vector3 = bulletLeft.transform.position - rb.transform.position;
-                vector3.Normalize();
-                vector3 *= 10f;
-                if (!isLaunchRight)
-                {
-                    vector3 *= 2f;
-                }
-                if (Vector3.Angle(rb.velocity, vector3) > 90f && Input.GetKey(KeyCode.LeftShift))
-                {
-                    flag2 = true;
-                    flag = true;
-                }
-                if (!flag2)
-                {
-                    rb.AddForce(vector3);
-                    if (Vector3.Angle(rb.velocity, vector3) > 90f)
-                    {
-                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
-                    }
-                }
-            }
-            launchElapsedTimeL += Time.deltaTime;
-            if (QHold && currentGas > 0f)
-            {
-                UseGas(useGasSpeed * Time.deltaTime);
-            }
-            else if (launchElapsedTimeL > 0.3f)
-            {
-                isLaunchLeft = false;
-                if (bulletLeft != null)
-                {
-                    bulletLeft.GetComponent<Bullet>().disable();
-                    bulletLeft = null;
-                    flag2 = false;
-                }
-            }
-        }
-        if (isLaunchRight)
-        {
-            if (bulletRight != null && bulletRight.GetComponent<Bullet>().isHooked())
-            {
-                isRightHandHooked = true;
-                Vector3 vector4 = bulletRight.transform.position - rb.transform.position;
-                vector4.Normalize();
-                vector4 *= 10f;
-                if (!isLaunchLeft)
-                {
-                    vector4 *= 2f;
-                }
-                if (Vector3.Angle(rb.velocity, vector4) > 90f && Input.GetKey(KeyCode.LeftShift))
-                {
-                    flag3 = true;
-                    flag = true;
-                }
-                if (!flag3)
-                {
-                    rb.AddForce(vector4);
-                    if (Vector3.Angle(rb.velocity, vector4) > 90f)
-                    {
-                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
-                    }
-                }
-            }
-            launchElapsedTimeR += Time.deltaTime;
-            if (EHold && currentGas > 0f)
-            {
-                UseGas(useGasSpeed * Time.deltaTime);
-            }
-            else if (launchElapsedTimeR > 0.3f)
-            {
-                isLaunchRight = false;
-                if (bulletRight != null)
-                {
-                    bulletRight.GetComponent<Bullet>().disable();
-                    bulletRight = null;
-                    flag3 = false;
-                }
-            }
-        }
+        
+        
         // anim.SetBool("isGrounded", grounded);
         InputHandler();
     }
 
-    private void launchLeftRope(RaycastHit hit, bool single, int mode = 0)
+    private void LaunchLeftRope(RaycastHit hit, bool single, int mode = 0)
     {
         if (currentGas != 0f)
         {
             UseGas();
-            bulletLeft = (GameObject)UnityEngine.Object.Instantiate(Resources.Load("hook"));
+            bulletLeft = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
 
             GameObject gameObject = hookRefL2;
             string launcher_ref = "hookRefL2";
             bulletLeft.transform.position = gameObject.transform.position;
-            Bullet component = bulletLeft.GetComponent<Bullet>();
             float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
             Vector3 vector = hit.point - base.transform.right * num - bulletLeft.transform.position;
             vector.Normalize();
             Debug.Log("Sigle :" + single + " Mode: " + mode);
             if (mode == 1)
             {
-                component.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject, true);
+                bulletLeft.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject, true);
             }
             else
             {
-                component.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject);
+                bulletLeft.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject);
             }
             launchPointLeft = Vector3.zero;
         }
     }
 
-    private void launchRightRope(RaycastHit hit, bool single, int mode = 0)
+    private void LaunchRightRope(RaycastHit hit, bool single, int mode = 0)
     {
         if (currentGas != 0f)
         {
             UseGas();
    
-            bulletRight = (GameObject)UnityEngine.Object.Instantiate(Resources.Load("hook"));
+            bulletRight = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
             GameObject gameObject = hookRefR2;
             string launcher_ref = "hookRefR2";
             bulletRight.transform.position = gameObject.transform.position;
-            Bullet component = bulletRight.GetComponent<Bullet>();
             float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
             Vector3 vector = hit.point + base.transform.right * num - bulletRight.transform.position;
             vector.Normalize();
             if (mode == 1)
             {
-                component.launch(vector * 5f, rb.velocity, launcher_ref, false, base.gameObject, true);
+                bulletRight.launch(vector * 5f, rb.velocity, launcher_ref, false, base.gameObject, true);
             }
             else
             {
-                component.launch(vector * 3f, rb.velocity, launcher_ref, false, base.gameObject);
+                bulletRight.launch(vector * 3f, rb.velocity, launcher_ref, false, base.gameObject);
             }
             launchPointRight = Vector3.zero;
         }
@@ -730,6 +644,90 @@ public class Hero : MonoBehaviour
         var flag3 = false;
         isLeftHandHooked = false;
         isRightHandHooked = false;
+        if (isLaunchLeft)
+        {
+            if (bulletLeft != null && bulletLeft.isHooked())
+            {
+                isLeftHandHooked = true;
+                Vector3 vector3 = bulletLeft.transform.position - transform.position;
+                vector3.Normalize();
+                vector3 *= 10f;
+                if (!isLaunchRight)
+                {
+                    vector3 *= 2f;
+                }
+                if (Vector3.Angle(rb.velocity, vector3) > 90f && Input.GetKey(KeyCode.LeftShift))
+                {
+                    flag2 = true;
+                    flag = true;
+                }
+                if (!flag2)
+                {
+                    rb.AddForce(vector3);
+                    if (Vector3.Angle(rb.velocity, vector3) > 90f)
+                    {
+                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
+                    }
+                }
+            }
+            launchElapsedTimeL += Time.deltaTime;
+            if (QHold && currentGas > 0f)
+            {
+                UseGas(useGasSpeed * Time.deltaTime);
+            }
+            else if (launchElapsedTimeL > 0.3f)
+            {
+                isLaunchLeft = false;
+                if (bulletLeft != null)
+                {
+                    bulletLeft.disable();
+                    bulletLeft = null;
+                    flag2 = false;
+                }
+            }
+        }
+        if (isLaunchRight)
+        {
+            if (bulletRight != null && bulletRight.isHooked())
+            {
+                isRightHandHooked = true;
+                Vector3 vector4 = bulletRight.transform.position - transform.position;
+                vector4.Normalize();
+                vector4 *= 10f;
+                if (!isLaunchLeft)
+                {
+                    vector4 *= 2f;
+                }
+                if (Vector3.Angle(rb.velocity, vector4) > 90f && Input.GetKey(KeyCode.LeftShift))
+                {
+                    flag3 = true;
+                    flag = true;
+                }
+                if (!flag3)
+                {
+                    rb.AddForce(vector4);
+                    if (Vector3.Angle(rb.velocity, vector4) > 90f)
+                    {
+                        rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
+                    }
+                }
+            }
+            launchElapsedTimeR += Time.deltaTime;
+            if (EHold && currentGas > 0f)
+            {
+                UseGas(useGasSpeed * Time.deltaTime);
+            }
+            else if (launchElapsedTimeR > 0.3f)
+            {
+                isLaunchRight = false;
+                if (bulletRight != null)
+                {
+                    bulletRight.disable();
+                    bulletRight = null;
+                    flag3 = false;
+                }
+            }
+        }
         if (grounded) 
         {
             Vector3 movementVector = Vector3.zero;
@@ -1015,17 +1013,52 @@ public class Hero : MonoBehaviour
                 }
             }
         }
+        var current = Vector3.zero;
+        if (flag2 && flag3)
+        {
+            current = (bulletRight.transform.position + bulletLeft.transform.position) * 0.5f - transform.position;
+        }
+        else if (flag2 && !flag3)
+        {
+            current = bulletLeft.transform.position - transform.position;
+        }
+        else if (flag3 && !flag2)
+        {
+            current = bulletRight.transform.position - transform.position;
+        }
+
+        if (flag2 || flag3)
+        {
+            rb.AddForce(-rb.velocity, ForceMode.VelocityChange);
+            if (Input.GetKey(KeyCode.Space))
+            {
+                reelAxis = -1f;
+            }
+            else if (Input.GetKey(KeyCode.LeftAlt))
+            {
+                reelAxis = 1f;
+            }
+            // else if(InputManager.DisableMouseReeling.Value == false)
+            // {
+            //     reelAxis = Input.GetAxis("Mouse ScrollWheel") * 5555f;
+            // }
+
+            var idk = 1.53938f * (1f + Mathf.Clamp(reelAxis, -0.8f, 0.8f));
+            reelAxis = 0f;
+            rb.velocity = Vector3.RotateTowards(current, rb.velocity, idk, idk).normalized * (currentSpeed + 0.1f);
+        }
+
         bool flag7 = false;
         if ((this.bulletLeft != null) || (this.bulletRight != null))
         {
-            // if (((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchLeft && this.bulletLeft.GetComponent<Bullet>().isHooked()))
-            // {
-            //     flag7 = true;
-            // }
-            // if (((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y)) && (this.isLaunchRight && this.bulletRight.GetComponent<Bullet>().isHooked()))
-            // {
-            //     flag7 = true;
-            // }
+            if ((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchLeft && this.bulletLeft.isHooked())
+            {
+                flag7 = true;
+            }
+            if ((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchRight && this.bulletRight.isHooked())
+            {
+                flag7 = true;
+            }
         }
         if (flag7)
         {
@@ -1034,6 +1067,14 @@ public class Hero : MonoBehaviour
         else
         {
             this.rb.AddForce(new Vector3(0f, -this.gravity * this.rb.mass, 0f));
+        }
+        if (this.currentSpeed > 10f)
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, Mathf.Min((float) 100f, (float) (this.currentSpeed + 40f)), 0.1f);
+        }
+        else
+        {
+            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, 50f, 0.1f);
         }
         if (!_cancelGasDisable)
         {
@@ -1063,18 +1104,111 @@ public class Hero : MonoBehaviour
         {
             _cancelGasDisable = false;
         }
-
-        if (this.currentSpeed > 10f)
-        {
-            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, Mathf.Min((float) 100f, (float) (this.currentSpeed + 40f)), 0.1f);
-        }
-        else
-        {
-            this.currentCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(this.currentCamera.GetComponent<Camera>().fieldOfView, 50f, 0.1f);
-        }
+        SetHookedPplDirection();
     }
 
 
+    private void SetHookedPplDirection()
+    {
+        almostSingleHook = false;
+        if (isRightHandHooked && isLeftHandHooked)
+        {
+            if (bulletLeft != null && bulletRight != null)
+            {
+                var vector = bulletLeft.transform.position - bulletRight.transform.position;
+                if (vector.sqrMagnitude < 4f)
+                {
+                    var vector2 = (bulletLeft.transform.position + bulletRight.transform.position) * 0.5f -
+                                  transform.position;
+                    facingDirection = Mathf.Atan2(vector2.x, vector2.z) * 57.29578f;
+                    if (gunner && State != HERO_STATE.Attack)
+                    {
+                        var velocity = rb.velocity;
+                        var current = -Mathf.Atan2(velocity.z, velocity.x) * 57.29578f;
+                        var target = -Mathf.Atan2(vector2.z, vector2.x) * 57.29578f;
+                        var num = -Mathf.DeltaAngle(current, target);
+                        facingDirection += num;
+                    }
+
+                    almostSingleHook = true;
+                }
+                else
+                {
+                    var position = transform.position;
+                    var position1 = bulletLeft.transform.position;
+                    var to = position - position1;
+                    var position2 = bulletRight.transform.position;
+                    var to2 = position - position2;
+                    var vector3 = (position1 + position2) * 0.5f;
+                    var from = position - vector3;
+                    if (Vector3.Angle(from, to) < 30f && Vector3.Angle(from, to2) < 30f)
+                    {
+                        almostSingleHook = true;
+                        var vector4 = vector3 - transform.position;
+                        facingDirection = Mathf.Atan2(vector4.x, vector4.z) * 57.29578f;
+                    }
+                    else
+                    {
+                        almostSingleHook = false;
+                        var forward = transform.forward;
+                        Vector3.OrthoNormalize(ref vector, ref forward);
+                        facingDirection = Mathf.Atan2(forward.x, forward.z) * 57.29578f;
+                        var current2 = Mathf.Atan2(to.x, to.z) * 57.29578f;
+                        var num2 = Mathf.DeltaAngle(current2, facingDirection);
+                        if (num2 > 0f)
+                        {
+                            facingDirection += 180f;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            almostSingleHook = true;
+            Vector3 vector5;
+            if (isRightHandHooked && bulletRight != null)
+            {
+                vector5 = bulletRight.transform.position - transform.position;
+            }
+            else
+            {
+                if (!isLeftHandHooked || !(bulletLeft != null))
+                {
+                    return;
+                }
+
+                vector5 = bulletLeft.transform.position - transform.position;
+            }
+
+            facingDirection = Mathf.Atan2(vector5.x, vector5.z) * 57.29578f;
+            if (State != HERO_STATE.Attack)
+            {
+                var velocity = rb.velocity;
+                var current3 = -Mathf.Atan2(velocity.z, velocity.x) * 57.29578f;
+                var target2 = -Mathf.Atan2(vector5.z, vector5.x) * 57.29578f;
+                var num3 = -Mathf.DeltaAngle(current3, target2);
+                if (gunner)
+                {
+                    facingDirection += num3;
+                }
+                else
+                {
+                    float num4;
+                    if (isLeftHandHooked && num3 < 0f || isRightHandHooked && num3 > 0f)
+                    {
+                        num4 = -0.1f;
+                    }
+                    else
+                    {
+                        num4 = 0.1f;
+                    }
+
+                    facingDirection += num3 * num4;
+                }
+            }
+        }
+    }
     private Vector3 GetGlobalFacingVector3(float angle)
     {
         float angleInDegrees = 0f - angle + 90f;

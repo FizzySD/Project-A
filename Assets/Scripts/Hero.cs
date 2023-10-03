@@ -14,7 +14,7 @@ public class Hero : MonoBehaviour
     #endregion
     private bool QHold;
     private bool EHold;
-    public Transform lastHook;
+    public Bullet lastHook;
     private AudioSource rope;
     private float launchElapsedTimeR;
     private float launchElapsedTimeL;
@@ -35,7 +35,7 @@ public class Hero : MonoBehaviour
     public Transform GasPoint;
     public GameObject gas; 
     public static Hero instance;
-    private Rigidbody rb;
+    public Rigidbody rb;
     private HERO_STATE _state;
     public float currentSpeed;
     private Animation anim;
@@ -64,14 +64,22 @@ public class Hero : MonoBehaviour
     private float lTapTime = -1f;
     private float rTapTime = -1f;
     private float invincible = 3f;
-    private float bulletTimer = 0f;
+    public float bulletTimer = 0f;
     private string currentAnimation;
     private bool gunner = false;
     private bool justGrounded;
     private string attackAnimation;
     private bool buttonAttackRelease;
-    private float reelAxis;
+    private float reelAxis = 0f;
     private bool almostSingleHook;
+    private bool bodyLean = false;
+    private float myScale = 1f;
+    private bool attackMove;
+    private bool attackReleased;
+    private int attackLoop;
+    private bool animationStopped = false;
+    private bool needLean;
+    private bool leanLeft;
 
     // Start is called before the first frame update
     private void Awake()
@@ -81,15 +89,105 @@ public class Hero : MonoBehaviour
         anim = GetComponentInChildren<Animation>();
         currentCamera = GameObject.Find("MainCamera").GetComponent<Camera>();
         this.rb.mass = 0.5f - ((150 - 100) * 0.001f);
-        smoke3Dmg = base.transform.Find("3dmg_smoke").GetComponent<ParticleSystem>();
+        
     }
     void Start()
     {
+        // GameManager.gameManager.AddHero(this);
+        smoke3Dmg = transform.Find("3dmg_smoke").GetComponent<ParticleSystem>();
+        transform.localScale = new Vector3(myScale, myScale, myScale);
+        facingDirection = transform.rotation.eulerAngles.y;
+        targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
         
     }
 
+    private void CustomAnimationSpeed()
+    {
+        // anim["attack5"].speed = 1.85f;
+        // anim["changeBlade"].speed = 1.2f;
+        anim["air_release"].speed = 0.6f;
+        // anim["changeBlade_air"].speed = 0.8f;
+        // anim["AHSS_gun_reload_both"].speed = 0.38f;
+        // anim["AHSS_gun_reload_both_air"].speed = 0.5f;
+        // anim["AHSS_gun_reload_l"].speed = 0.4f;
+        // anim["AHSS_gun_reload_l_air"].speed = 0.5f;
+        // anim["AHSS_gun_reload_r"].speed = 0.4f;
+        // anim["AHSS_gun_reload_r_air"].speed = 0.5f;
+    }
+
+    public string CurrentPlayingClipName()
+    {
+        foreach (var obj in anim)
+        {
+            var animationState = (AnimationState)obj;
+            if (anim.IsPlaying(animationState.name))
+            {
+                return animationState.name;
+            }
+        }
+
+        return string.Empty;
+    }
+    public void ContinueAnimation()
+    {
+        if (!animationStopped)
+        {
+            return;
+        }
+        animationStopped = false;
+        foreach (var obj in anim)
+        {
+            var animationState = (AnimationState)obj;
+            if (animationState.speed == 1f)
+            {
+                return;
+            }
+
+            animationState.speed = 1f;
+        }
+
+        CustomAnimationSpeed();
+        PlayAnimation(CurrentPlayingClipName());
+        // if (IN_GAME_MAIN_CAMERA.GameType != GameType.Single && BasePV.IsMine)
+        // {
+        //     BasePV.RPC("netContinueAnimation", PhotonTargets.Others);
+        // }
+    }
+    public void FalseAttack()
+    {
+        attackMove = false;
+        if (gunner)
+        {
+            if (!attackReleased)
+            {
+                ContinueAnimation();
+                attackReleased = true;
+            }
+        }
+        else
+        {
+            // if (IN_GAME_MAIN_CAMERA.GameType == GameType.Single || BasePV.IsMine)
+            // {
+            //     wLeft.Active = false;
+            //     wRight.Active = false;
+            //     wLeft.clearHits();
+            //     wRight.clearHits();
+            //     leftbladetrail.StopSmoothly(0.2f);
+            //     rightbladetrail.StopSmoothly(0.2f);
+            //     leftbladetrail2.StopSmoothly(0.2f);
+            //     rightbladetrail2.StopSmoothly(0.2f);
+            // }
+
+            attackLoop = 0;
+            if (!attackReleased)
+            {
+                ContinueAnimation();
+                attackReleased = true;
+            }
+        }
+    }
     // Update is called once per frame
-    void Update()
+    public void Update()
     {   
     
     var dt = Time.deltaTime;
@@ -177,7 +275,7 @@ public class Hero : MonoBehaviour
                 dashTime -= dt;
                 if (currentSpeed > originVM)
                 {
-                    rb.AddForce(1.7f * dt * -rb.velocity, ForceMode.VelocityChange);
+                    rb.AddForce(-rb.velocity * dt * 1.7f, ForceMode.VelocityChange);
                 }
             }
             else
@@ -199,7 +297,7 @@ public class Hero : MonoBehaviour
 
             if (Input.GetKey(KeyCode.Q))
             {
-                if (bulletLeft != null)
+                if (bulletLeft)
                 {
                     QHold = true;
                 }
@@ -221,7 +319,7 @@ public class Hero : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.E))
             {
-                if (bulletRight != null)
+                if (bulletRight)
                 {
                     EHold = true;
                 }
@@ -261,7 +359,7 @@ public class Hero : MonoBehaviour
         }
     }
 
-    public void launch(Vector3 des, bool left = true, bool leviMode = false)
+    public void Launch(Vector3 des, bool left = true, bool leviMode = false)
     {
         if (left)
         {
@@ -298,34 +396,45 @@ public class Hero : MonoBehaviour
         }
         vector.Normalize();
         vector *= 20f;
-        if (bulletLeft != null && bulletRight != null && bulletLeft.isHooked() && bulletRight.isHooked())
+        if (bulletLeft != null && bulletRight != null && bulletLeft.IsHooked() && bulletRight.IsHooked())
         {
             vector *= 0.8f;
         }
         leviMode = anim.IsPlaying("attack5") || anim.IsPlaying("special_petra");
         if (!leviMode)
         {
-            //falseAttack();
+            FalseAttack();
             Idle();
-            /*
-            if (useGun)
-            {
-                crossFade("AHSS_hook_forward_both", 0.1f);
+            if (bodyLean) {
+                /*
+                if (useGun)
+                {
+                    crossFade("AHSS_hook_forward_both", 0.1f);
+                }
+                */
+                if (left && !isRightHandHooked)
+                {
+                    CrossFade("air_hook_l_just", 0.1f);
+                }
+                else if (!left && !isLeftHandHooked)
+                {
+                    CrossFade("air_hook_r_just", 0.1f);
+                }
+                else
+                {
+                    CrossFade("oldDash", 0.1f);
+                    anim["oldDash"].time = 0f;
+                }
             }
-            */
-            if (left && !isRightHandHooked)
-            {
-                CrossFade("air_hook_l_just", 0.1f);
-            }
-            else if (!left && !isLeftHandHooked)
-            {
-                CrossFade("air_hook_r_just", 0.1f);
-            }
-            else
-            {
-                CrossFade("oldDash", 0.1f);
-                anim["oldDash"].time = 0f;
-            }
+        }
+        if (left)
+        {
+            isLaunchLeft = true;
+        }
+
+        if (!left)
+        {
+            isLaunchRight = true;
         }
         launchForce = vector;
         if (!leviMode)
@@ -342,9 +451,18 @@ public class Hero : MonoBehaviour
         }
         facingDirection = Mathf.Atan2(launchForce.x, launchForce.z) * 57.29578f;
         Quaternion rotation = Quaternion.Euler(0f, facingDirection, 0f);
-        rb.transform.rotation = rotation;
+        gameObject.transform.rotation = rotation;
         rb.rotation = rotation;
         targetRotation = rotation;
+        if (left)
+        {
+            launchElapsedTimeL = 0f;
+        }
+        else
+        {
+            launchElapsedTimeR = 0f;
+        }
+
         if (leviMode)
         {
             launchElapsedTimeR = -100f;
@@ -355,12 +473,12 @@ public class Hero : MonoBehaviour
             launchElapsedTimeL = -100f;
             if (bulletRight != null)
             {
-                bulletRight.disable();
+                bulletRight.Disable();
                 //releaseIfIHookSb();
             }
             if (bulletLeft != null)
             {
-                bulletLeft.disable();
+                bulletLeft.Disable();
                 //releaseIfIHookSb();
             }
         }
@@ -404,7 +522,7 @@ public class Hero : MonoBehaviour
         anim["oldDash"].time = 0.1f;
         // anim.SetTrigger("Dashing");
         State = HERO_STATE.AirDodge;
-        // FalseAttack();
+        FalseAttack();
         rb.AddForce(dashV * 40f, ForceMode.VelocityChange);
         _lastBurstTime = now;
     }
@@ -425,10 +543,10 @@ public class Hero : MonoBehaviour
     }
     private void Idle()
     {
-        // if (State == HeroState.Attack)
-        // {
-        //     FalseAttack();
-        // }
+        if (State == HERO_STATE.Attack)
+        {
+            FalseAttack();
+        }
 
         State = HERO_STATE.Idle;
         CrossFade("oldStand", 0.1f);
@@ -569,53 +687,60 @@ public class Hero : MonoBehaviour
 
     private void LaunchLeftRope(RaycastHit hit, bool single, int mode = 0)
     {
-        if (currentGas != 0f)
+        if (currentGas == 0f)
         {
-            UseGas();
-            bulletLeft = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
-
-            GameObject gameObject = hookRefL2;
-            string launcher_ref = "hookRefL2";
-            bulletLeft.transform.position = gameObject.transform.position;
-            float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
-            Vector3 vector = hit.point - base.transform.right * num - bulletLeft.transform.position;
-            vector.Normalize();
-            Debug.Log("Sigle :" + single + " Mode: " + mode);
-            if (mode == 1)
-            {
-                bulletLeft.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject, true);
-            }
-            else
-            {
-                bulletLeft.launch(vector * 3f, rb.velocity, launcher_ref, true, base.gameObject);
-            }
-            launchPointLeft = Vector3.zero;
+            return;
         }
+
+        UseGas();
+        bulletLeft = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
+
+        GameObject gameObject = hookRefL1;
+        string launcher_ref = "hookRefL1";
+        bulletLeft.transform.position = gameObject.transform.position;
+        float num = !single ? hit.distance <= 50f ? hit.distance * 0.05f : hit.distance * 0.3f : 0f;
+        var component = bulletLeft;
+        Vector3 vector = hit.point - base.transform.right * num - component.transform.position;
+        vector.Normalize();
+        Debug.Log("Sigle :" + single + " Mode: " + mode);
+        if (mode == 1)
+        {
+            component.Launch(vector * 3f, rb.velocity, launcher_ref, true, this, true);
+        }
+        else
+        {
+            component.Launch(vector * 3f, rb.velocity, launcher_ref, true, this);
+        }
+        launchPointLeft = Vector3.zero;
+        
     }
 
     private void LaunchRightRope(RaycastHit hit, bool single, int mode = 0)
     {
-        if (currentGas != 0f)
+        if (currentGas == 0f)
         {
-            UseGas();
-   
-            bulletRight = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
-            GameObject gameObject = hookRefR2;
-            string launcher_ref = "hookRefR2";
-            bulletRight.transform.position = gameObject.transform.position;
-            float num = (single ? 0f : ((hit.distance <= 50f) ? (hit.distance * 0.05f) : (hit.distance * 0.3f)));
-            Vector3 vector = hit.point + base.transform.right * num - bulletRight.transform.position;
-            vector.Normalize();
-            if (mode == 1)
-            {
-                bulletRight.launch(vector * 5f, rb.velocity, launcher_ref, false, base.gameObject, true);
-            }
-            else
-            {
-                bulletRight.launch(vector * 3f, rb.velocity, launcher_ref, false, base.gameObject);
-            }
-            launchPointRight = Vector3.zero;
+            return;
         }
+        UseGas();
+
+        bulletRight = ((GameObject)Instantiate(Resources.Load("hook"))).GetComponent<Bullet>();
+        GameObject gameObject = hookRefR1;
+        string launcher_ref = "hookRefR1";
+        bulletRight.transform.position = gameObject.transform.position;
+        var component = bulletRight;
+        float num = !single ? hit.distance <= 50f ? hit.distance * 0.05f : hit.distance * 0.3f : 0f;
+        Vector3 vector = hit.point + base.transform.right * num - component.transform.position;
+        vector.Normalize();
+        if (mode == 1)
+        {
+            component.Launch(vector * 5f, rb.velocity, launcher_ref, false, this, true);
+        }
+        else
+        {
+            component.Launch(vector * 3f, rb.velocity, launcher_ref, false, this);
+        }
+        launchPointRight = Vector3.zero;
+        
     }
 
     public void InputHandler() 
@@ -646,7 +771,7 @@ public class Hero : MonoBehaviour
         isRightHandHooked = false;
         if (isLaunchLeft)
         {
-            if (bulletLeft != null && bulletLeft.isHooked())
+            if (bulletLeft != null && bulletLeft.IsHooked())
             {
                 isLeftHandHooked = true;
                 Vector3 vector3 = bulletLeft.transform.position - transform.position;
@@ -669,6 +794,14 @@ public class Hero : MonoBehaviour
                         rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
                     }
                 }
+
+                // if (!bodyLean)
+                // {
+                //     facingDirection = Mathf.Atan2(vector3.x, vector3.z) * 57.29578f;
+                //     var rotation = Quaternion.Euler(0f, facingDirection, 0f);
+                //     transform.rotation = rotation;
+                //     rb.rotation = rotation;
+                // }
             }
             launchElapsedTimeL += Time.deltaTime;
             if (QHold && currentGas > 0f)
@@ -680,7 +813,8 @@ public class Hero : MonoBehaviour
                 isLaunchLeft = false;
                 if (bulletLeft != null)
                 {
-                    bulletLeft.disable();
+                    var component = bulletLeft;
+                    component.Disable();
                     bulletLeft = null;
                     flag2 = false;
                 }
@@ -688,7 +822,7 @@ public class Hero : MonoBehaviour
         }
         if (isLaunchRight)
         {
-            if (bulletRight != null && bulletRight.isHooked())
+            if (bulletRight != null && bulletRight.IsHooked())
             {
                 isRightHandHooked = true;
                 Vector3 vector4 = bulletRight.transform.position - transform.position;
@@ -711,6 +845,14 @@ public class Hero : MonoBehaviour
                         rb.AddForce(-rb.velocity * 2f, ForceMode.Acceleration);
                     }
                 }
+
+                // if (!bodyLean)
+                // {
+                //     facingDirection = Mathf.Atan2(vector4.x, vector4.z) * 57.29578f;
+                //     var rotation = Quaternion.Euler(0f, facingDirection, 0f);
+                //     transform.rotation = rotation;
+                //     rb.rotation = rotation;
+                // }
             }
             launchElapsedTimeR += Time.deltaTime;
             if (EHold && currentGas > 0f)
@@ -722,7 +864,8 @@ public class Hero : MonoBehaviour
                 isLaunchRight = false;
                 if (bulletRight != null)
                 {
-                    bulletRight.disable();
+                    var component2 = bulletRight;
+                    component2.Disable();
                     bulletRight = null;
                     flag3 = false;
                 }
@@ -786,7 +929,7 @@ public class Hero : MonoBehaviour
                     Vector3 inputVector = new Vector3(horizontalMovement, 0f, verticalMovement);
                     float globalDirection = GetGlobalFacingDirection(horizontalMovement, verticalMovement);
                     movementVector = GetGlobalFacingVector3(globalDirection);
-                    float magnitudeModifer = inputVector.magnitude > 0.95f ? 1f : (inputVector.magnitude >= 0.25f ? inputVector.magnitude : 0f);
+                    float magnitudeModifer = inputVector.magnitude <= 0.95f ? inputVector.magnitude >= 0.25f ? inputVector.magnitude : 0f : 1f;
                     movementVector *= magnitudeModifer;
                     movementVector *= speed;
                     
@@ -801,6 +944,7 @@ public class Hero : MonoBehaviour
                     {
                         if (!anim.IsPlaying("oldStand") && State != HERO_STATE.Land && !anim.IsPlaying("oldJump")) {
                             CrossFade("oldStand", 0.1f);
+                            movementVector *= 0f;
                             // anim.SetBool("isRunning", false);
                         }
                         // anim.SetBool("isRunning", false);
@@ -1029,7 +1173,7 @@ public class Hero : MonoBehaviour
 
         if (flag2 || flag3)
         {
-            rb.AddForce(-rb.velocity, ForceMode.VelocityChange);
+            rb.AddForce(Vector3.zero, ForceMode.Acceleration);
             if (Input.GetKey(KeyCode.Space))
             {
                 reelAxis = -1f;
@@ -1051,11 +1195,11 @@ public class Hero : MonoBehaviour
         bool flag7 = false;
         if ((this.bulletLeft != null) || (this.bulletRight != null))
         {
-            if ((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchLeft && this.bulletLeft.isHooked())
+            if ((this.bulletLeft != null) && (this.bulletLeft.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchLeft && this.bulletLeft.IsHooked())
             {
                 flag7 = true;
             }
-            if ((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchRight && this.bulletRight.isHooked())
+            if ((this.bulletRight != null) && (this.bulletRight.transform.position.y > base.gameObject.transform.position.y) && this.isLaunchRight && this.bulletRight.IsHooked())
             {
                 flag7 = true;
             }
@@ -1105,9 +1249,119 @@ public class Hero : MonoBehaviour
             _cancelGasDisable = false;
         }
         SetHookedPplDirection();
+        BodyLean();
+    }
+
+    private void BodyLean()
+    {
+        var z = 0f;
+        needLean = false;
+        if (!grounded && !gunner && State == HERO_STATE.Attack && attackAnimation != "attack3_1" &&
+            attackAnimation != "attack3_2")
+        {
+            var velocity = rb.velocity;
+            var y = velocity.y;
+            var x = velocity.x;
+            var z2 = velocity.z;
+            var x2 = Mathf.Sqrt(x * x + z2 * z2);
+            var num = Mathf.Atan2(y, x2) * 57.29578f;
+            targetRotation = Quaternion.Euler(-num * (1f - Vector3.Angle(rb.velocity, transform.forward) / 90f),
+                facingDirection, 0f);
+            if (isLeftHandHooked && bulletLeft != null || isRightHandHooked && bulletRight != null)
+            {
+                transform.rotation = targetRotation;
+            }
+
+            return;
+        }
+
+        if (isLeftHandHooked && bulletLeft != null && isRightHandHooked && bulletRight != null)
+        {
+            if (almostSingleHook)
+            {
+                needLean = true;
+                z = GetLeanAngle(bulletRight.transform.position, true);
+            }
+        }
+        else if (isLeftHandHooked && bulletLeft != null)
+        {
+            needLean = true;
+            z = GetLeanAngle(bulletLeft.transform.position, true);
+        }
+        else if (isRightHandHooked && bulletRight != null)
+        {
+            needLean = true;
+            z = GetLeanAngle(bulletRight.transform.position, false);
+        }
+
+        if (needLean)
+        {
+            var num2 = 0f;
+            if (!gunner && State != HERO_STATE.Attack)
+            {
+                num2 = currentSpeed * 0.1f;
+                num2 = Mathf.Min(num2, 20f);
+            }
+
+            targetRotation = Quaternion.Euler(-num2, facingDirection, z);
+        }
+        else if (State != HERO_STATE.Attack)
+        {
+            targetRotation = Quaternion.Euler(0f, facingDirection, 0f);
+        }
     }
 
 
+    private float GetLeanAngle(Vector3 p, bool left)
+    {
+        if (!gunner && State == HERO_STATE.Attack)
+        {
+            return 0f;
+        }
+
+        var position = transform.position;
+        var num = p.y - position.y;
+        var num2 = Vector3.Distance(p, position);
+        var num3 = Mathf.Acos(num / num2) * 57.29578f;
+        num3 *= 0.1f;
+        num3 *= 1f + Mathf.Pow(rb.velocity.magnitude, 0.2f);
+        var vector = p - position;
+        var current = Mathf.Atan2(vector.x, vector.z) * 57.29578f;
+        var velocity = rb.velocity;
+        var target = Mathf.Atan2(velocity.x, velocity.z) * 57.29578f;
+        var num4 = Mathf.DeltaAngle(current, target);
+        num3 += Mathf.Abs(num4 * 0.5f);
+        if (State != HERO_STATE.Attack)
+        {
+            num3 = Mathf.Min(num3, 80f);
+        }
+
+        if (num4 > 0f)
+        {
+            leanLeft = true;
+        }
+        else
+        {
+            leanLeft = false;
+        }
+
+        if (gunner)
+        {
+            return num3 * (num4 >= 0f ? 1 : -1);
+        }
+
+        float num5;
+        if (left && num4 < 0f || !left && num4 > 0f)
+        {
+            num5 = 0.1f;
+        }
+        else
+        {
+            num5 = 0.5f;
+        }
+
+        return num3 * (num4 >= 0f ? num5 : -num5);
+    }
     private void SetHookedPplDirection()
     {
         almostSingleHook = false;
@@ -1118,8 +1372,7 @@ public class Hero : MonoBehaviour
                 var vector = bulletLeft.transform.position - bulletRight.transform.position;
                 if (vector.sqrMagnitude < 4f)
                 {
-                    var vector2 = (bulletLeft.transform.position + bulletRight.transform.position) * 0.5f -
-                                  transform.position;
+                    var vector2 = (bulletLeft.transform.position + bulletRight.transform.position) * 0.5f - transform.position;
                     facingDirection = Mathf.Atan2(vector2.x, vector2.z) * 57.29578f;
                     if (gunner && State != HERO_STATE.Attack)
                     {
@@ -1344,5 +1597,7 @@ public class Hero : MonoBehaviour
             this._state = value;
         }
     }
+
+    public bool IsLocal = true;
 }
 

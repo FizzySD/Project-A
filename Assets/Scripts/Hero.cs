@@ -1173,7 +1173,9 @@ public class Hero : MonoBehaviour
 
         if (flag2 || flag3)
         {
-            rb.AddForce(Vector3.zero, ForceMode.Acceleration);
+            
+            rb.AddForce(Vector3.zero, ForceMode.VelocityChange);
+            // rb.AddForce(Vector3.zero, ForceMode.Acceleration);
             if (Input.GetKey(KeyCode.Space))
             {
                 reelAxis = -1f;
@@ -1190,6 +1192,8 @@ public class Hero : MonoBehaviour
             var idk = 1.53938f * (1f + Mathf.Clamp(reelAxis, -0.8f, 0.8f));
             reelAxis = 0f;
             rb.velocity = Vector3.RotateTowards(current, rb.velocity, idk, idk).normalized * (currentSpeed + 0.1f);
+
+            
         }
 
         bool flag7 = false;
@@ -1597,7 +1601,5 @@ public class Hero : MonoBehaviour
             this._state = value;
         }
     }
-
-    public bool IsLocal = true;
 }
 

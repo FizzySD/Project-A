@@ -339,7 +339,7 @@ public class Hero : MonoBehaviour
             {
                 EHold = false;
             }
-            if (Input.GetKey(KeyCode.Space))
+            if (Input.GetMouseButtonDown(1))
             {
                 QHold = true;
                 EHold = true;
